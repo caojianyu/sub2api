@@ -13,6 +13,7 @@ import (
 	"mime"
 	"mime/multipart"
 	"net/http"
+	"net/url"
 	"net/textproto"
 	"strconv"
 	"strings"
@@ -215,9 +216,6 @@ func (s *OpenAIGatewayService) ParseOpenAIImagesRequest(c *gin.Context, body []b
 	}
 
 	applyOpenAIImagesDefaults(req)
-	if err := validateOpenAIImagesModel(req.Model); err != nil {
-		return nil, err
-	}
 	req.SizeTier = normalizeOpenAIImageSizeTier(req.Size)
 	req.RequiredCapability = classifyOpenAIImagesCapability(req)
 	return req, nil
@@ -469,6 +467,21 @@ func validateOpenAIImagesModel(model string) error {
 	return fmt.Errorf("images endpoint requires an image model, got %q", model)
 }
 
+func openAIImagesRequiresOfficialModel(account *Account) bool {
+	if account == nil {
+		return true
+	}
+	baseURL := strings.TrimSpace(account.GetOpenAIBaseURL())
+	if baseURL == "" {
+		return true
+	}
+	parsed, err := url.Parse(baseURL)
+	if err != nil || parsed.Hostname() == "" {
+		return true
+	}
+	return strings.EqualFold(parsed.Hostname(), "api.openai.com")
+}
+
 func normalizeOpenAIImagesEndpointPath(path string) string {
 	trimmed := strings.TrimSpace(path)
 	switch {
@@ -569,12 +582,17 @@ func (s *OpenAIGatewayService) forwardOpenAIImagesAPIKey(
 	if mapped := strings.TrimSpace(channelMappedModel); mapped != "" {
 		requestModel = mapped
 	}
-	if err := validateOpenAIImagesModel(requestModel); err != nil {
-		return nil, err
+	requiresOfficialModel := openAIImagesRequiresOfficialModel(account)
+	if requiresOfficialModel {
+		if err := validateOpenAIImagesModel(requestModel); err != nil {
+			return nil, err
+		}
 	}
 	upstreamModel := account.GetMappedModel(requestModel)
-	if err := validateOpenAIImagesModel(upstreamModel); err != nil {
-		return nil, err
+	if requiresOfficialModel {
+		if err := validateOpenAIImagesModel(upstreamModel); err != nil {
+			return nil, err
+		}
 	}
 	logger.LegacyPrintf(
 		"service.openai_gateway",
