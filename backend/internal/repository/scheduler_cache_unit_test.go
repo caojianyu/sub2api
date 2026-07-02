@@ -75,3 +75,91 @@ func TestBuildSchedulerMetadataAccount_KeepsSlimGroupMembership(t *testing.T) {
 	require.Equal(t, int64(11), got.AccountGroups[1].GroupID)
 	require.Nil(t, got.Groups)
 }
+
+func TestBuildSchedulerMetadataAccount_KeepsQuotaAutoPauseFields(t *testing.T) {
+	account := service.Account{
+		ID: 88,
+		Extra: map[string]any{
+			"codex_5h_used_percent":        12.34,
+			"codex_7d_used_percent":        56.78,
+			"codex_5h_reset_at":            "2026-05-29T10:00:00Z",
+			"codex_7d_reset_at":            "2026-06-01T10:00:00Z",
+			"codex_5h_reset_after_seconds": 300,
+			"codex_7d_reset_after_seconds": 600,
+			"codex_usage_updated_at":       "2026-05-29T09:00:00Z",
+			"auto_pause_5h_threshold":      0.95,
+			"auto_pause_7d_threshold":      0.96,
+			"auto_pause_5h_disabled":       true,
+			"auto_pause_7d_disabled":       false,
+		},
+	}
+
+	got := buildSchedulerMetadataAccount(account)
+
+	require.Equal(t, 12.34, got.Extra["codex_5h_used_percent"])
+	require.Equal(t, 56.78, got.Extra["codex_7d_used_percent"])
+	require.Equal(t, "2026-05-29T10:00:00Z", got.Extra["codex_5h_reset_at"])
+	require.Equal(t, "2026-06-01T10:00:00Z", got.Extra["codex_7d_reset_at"])
+	require.Equal(t, 300, got.Extra["codex_5h_reset_after_seconds"])
+	require.Equal(t, 600, got.Extra["codex_7d_reset_after_seconds"])
+	require.Equal(t, "2026-05-29T09:00:00Z", got.Extra["codex_usage_updated_at"])
+	require.Equal(t, 0.95, got.Extra["auto_pause_5h_threshold"])
+	require.Equal(t, 0.96, got.Extra["auto_pause_7d_threshold"])
+	require.Equal(t, true, got.Extra["auto_pause_5h_disabled"])
+	require.Equal(t, false, got.Extra["auto_pause_7d_disabled"])
+}
+
+func TestBuildSchedulerMetadataAccount_KeepsModelRateLimits(t *testing.T) {
+	account := service.Account{
+		ID:       90,
+		Platform: service.PlatformAntigravity,
+		Extra: map[string]any{
+			"model_rate_limits": map[string]any{
+				"gemini-3-flash": map[string]any{
+					"rate_limit_reset_at": "2026-05-30T10:10:00Z",
+				},
+				"antigravity:gemini": map[string]any{
+					"rate_limit_reset_at": "2026-05-30T10:10:00Z",
+				},
+			},
+			"unused_large_field": "drop-me",
+		},
+	}
+
+	got := buildSchedulerMetadataAccount(account)
+
+	limits, ok := got.Extra["model_rate_limits"].(map[string]any)
+	require.True(t, ok)
+	require.Contains(t, limits, "gemini-3-flash")
+	require.Contains(t, limits, "antigravity:gemini")
+	require.Nil(t, got.Extra["unused_large_field"])
+}
+
+func TestBuildSchedulerMetadataAccount_KeepsSparkShadowRoutingIdentity(t *testing.T) {
+	parentID := int64(100)
+	account := service.Account{
+		ID:              200,
+		Platform:        service.PlatformOpenAI,
+		Type:            service.AccountTypeOAuth,
+		ParentAccountID: &parentID,
+		QuotaDimension:  service.QuotaDimensionSpark,
+		Credentials: map[string]any{
+			"model_mapping": map[string]any{
+				"gpt-5.3-codex-spark": "gpt-5.3-codex-spark",
+			},
+			"compact_model_mapping": map[string]any{
+				"gpt-5.4": "gpt-5.4-openai-compact",
+			},
+			"access_token": "drop-me",
+		},
+	}
+
+	got := buildSchedulerMetadataAccount(account)
+
+	require.NotNil(t, got.ParentAccountID)
+	require.Equal(t, parentID, *got.ParentAccountID)
+	require.Equal(t, service.QuotaDimensionSpark, got.QuotaDimension)
+	require.Equal(t, map[string]any{"gpt-5.3-codex-spark": "gpt-5.3-codex-spark"}, got.Credentials["model_mapping"])
+	require.Equal(t, map[string]any{"gpt-5.4": "gpt-5.4-openai-compact"}, got.Credentials["compact_model_mapping"])
+	require.Nil(t, got.Credentials["access_token"])
+}

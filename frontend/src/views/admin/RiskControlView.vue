@@ -53,7 +53,105 @@
           </div>
         </div>
 
-        <div class="card">
+        <div
+          v-if="showPreBlockRuntimeCard"
+          data-test="pre-block-runtime-cards"
+          class="grid grid-cols-1 gap-6 xl:grid-cols-[minmax(0,520px)_minmax(0,1fr)]"
+        >
+          <div data-test="pre-block-sync-card" class="card">
+            <div class="flex flex-col gap-4 border-b border-gray-100 px-6 py-4 dark:border-dark-700 lg:flex-row lg:items-center lg:justify-between">
+              <div>
+                <h2 class="text-lg font-semibold text-gray-900 dark:text-white">{{ t('admin.riskControl.preBlockSyncStatus') }}</h2>
+                <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">{{ t('admin.riskControl.preBlockSyncHint') }}</p>
+              </div>
+              <span class="inline-flex w-fit items-center rounded-full bg-gray-100 px-2.5 py-1 text-xs font-medium text-gray-600 dark:bg-dark-700 dark:text-gray-300">
+                {{ modeLabel(status?.mode ?? configForm.mode) }}
+              </span>
+            </div>
+
+            <div class="p-6">
+              <div data-test="pre-block-metric-grid" class="grid grid-cols-2 gap-3 md:grid-cols-3">
+                <div
+                  v-for="item in preBlockMetricItems"
+                  :key="item.key"
+                  class="rounded-lg p-4"
+                  :class="item.class"
+                >
+                  <p class="text-xs text-gray-500 dark:text-gray-400">{{ item.label }}</p>
+                  <p class="mt-2 truncate text-2xl font-semibold leading-8" :class="item.valueClass">{{ item.value }}</p>
+                  <p v-if="item.meta" class="mt-1 truncate text-xs text-gray-500 dark:text-gray-400">{{ item.meta }}</p>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div data-test="pre-block-api-key-load-card" class="card">
+            <div class="flex flex-col gap-4 border-b border-gray-100 px-6 py-4 dark:border-dark-700 lg:flex-row lg:items-center lg:justify-between">
+              <div>
+                <h2 class="text-lg font-semibold text-gray-900 dark:text-white">{{ t('admin.riskControl.preBlockAPIKeyLoad') }}</h2>
+                <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">
+                  {{ t('admin.riskControl.preBlockAPIKeyLoadHint') }}
+                </p>
+              </div>
+              <span class="inline-flex w-fit items-center rounded-full bg-gray-100 px-2.5 py-1 text-xs font-medium text-gray-600 dark:bg-dark-700 dark:text-gray-300">
+                {{ preBlockAPIKeyLoadSummaryText }}
+              </span>
+            </div>
+
+            <div class="p-6">
+              <div
+                v-if="preBlockAPIKeyLoads.length > 0"
+                data-test="pre-block-api-key-load-list"
+                class="max-h-[280px] space-y-3 overflow-y-auto pr-1"
+              >
+                <div
+                  v-for="item in preBlockAPIKeyLoads"
+                  :key="item.key_hash || item.index"
+                  class="rounded-lg bg-gray-50 p-3 dark:bg-dark-700/50"
+                >
+                  <div class="flex min-w-0 flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+                    <div class="min-w-0">
+                      <div class="flex min-w-0 items-center gap-2">
+                        <span class="font-mono text-sm font-semibold text-gray-900 dark:text-white">#{{ item.index + 1 }}</span>
+                        <span class="truncate font-mono text-sm text-gray-700 dark:text-gray-200">{{ item.masked || '-' }}</span>
+                        <span class="h-2 w-2 flex-shrink-0 rounded-full" :class="apiKeyStatusDotClass(item.status)"></span>
+                      </div>
+                      <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">
+                        {{ t('admin.riskControl.preBlockAPIKeyTotals', { total: formatNumber(item.total), success: formatNumber(item.success), errors: formatNumber(item.errors) }) }}
+                      </p>
+                    </div>
+                    <div class="grid grid-cols-4 gap-2 text-right text-xs text-gray-500 dark:text-gray-400 sm:min-w-[280px]">
+                      <div>
+                        <p>{{ t('admin.riskControl.preBlockKeyActiveShort') }}</p>
+                        <p class="mt-1 text-sm font-semibold text-sky-700 dark:text-sky-300">{{ formatNumber(item.active) }}</p>
+                      </div>
+                      <div>
+                        <p>{{ t('admin.riskControl.preBlockKeyTotalShort') }}</p>
+                        <p class="mt-1 text-sm font-semibold text-gray-900 dark:text-white">{{ formatNumber(item.total) }}</p>
+                      </div>
+                      <div>
+                        <p>{{ t('admin.riskControl.preBlockKeyAvgShort') }}</p>
+                        <p class="mt-1 text-sm font-semibold text-gray-900 dark:text-white">{{ formatNumber(item.avg_latency_ms) }} ms</p>
+                      </div>
+                      <div>
+                        <p>{{ t('admin.riskControl.preBlockKeyLastShort') }}</p>
+                        <p class="mt-1 text-sm font-semibold text-gray-900 dark:text-white">{{ formatNumber(item.last_latency_ms) }} ms</p>
+                      </div>
+                    </div>
+                  </div>
+                  <div class="mt-3 h-1.5 overflow-hidden rounded-full bg-white dark:bg-dark-900">
+                    <div class="h-full rounded-full bg-sky-500" :style="{ width: preBlockAPIKeyLoadWidth(item.total) }"></div>
+                  </div>
+                </div>
+              </div>
+              <p v-else class="rounded-lg bg-gray-50 p-4 text-sm text-gray-500 dark:bg-dark-700/50 dark:text-gray-400">
+                {{ t('admin.riskControl.preBlockAPIKeyLoadEmpty') }}
+              </p>
+            </div>
+          </div>
+        </div>
+
+        <div v-if="showWorkerRuntimeCard" class="card">
           <div class="flex flex-col gap-4 border-b border-gray-100 px-6 py-4 dark:border-dark-700 lg:flex-row lg:items-center lg:justify-between">
             <div>
               <h2 class="text-lg font-semibold text-gray-900 dark:text-white">{{ t('admin.riskControl.workerStatus') }}</h2>
@@ -219,6 +317,9 @@
                     <td class="whitespace-nowrap px-5 py-4 text-sm text-gray-700 dark:text-gray-300">
                       <div>{{ row.highest_category || '-' }}</div>
                       <div class="text-xs text-gray-400">{{ percent(row.highest_score) }}</div>
+                      <div v-if="row.matched_keyword" class="mt-0.5 text-xs font-medium text-red-600 dark:text-red-300" :title="t('admin.riskControl.matchedKeyword') + ': ' + row.matched_keyword">
+                        {{ t('admin.riskControl.matchedKeyword') }}: {{ row.matched_keyword }}
+                      </div>
                     </td>
                     <td class="whitespace-nowrap px-5 py-4 text-sm text-gray-700 dark:text-gray-300">
                       <div>{{ violationCountText(row) }}</div>
@@ -783,6 +884,13 @@
                 </div>
                 <Toggle v-model="configForm.auto_ban_enabled" />
               </div>
+              <div class="flex items-center justify-between rounded-lg border border-gray-100 p-4 dark:border-dark-700 lg:col-span-2">
+                <div>
+                  <p class="text-sm font-medium text-gray-900 dark:text-white">{{ t('admin.riskControl.cyberPolicyExcludeBan') }}</p>
+                  <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">{{ t('admin.riskControl.cyberPolicyExcludeBanHint') }}</p>
+                </div>
+                <Toggle v-model="configForm.cyber_policy_exclude_from_ban_count" />
+              </div>
               <div>
                 <label class="input-label">{{ t('admin.riskControl.banThreshold') }}</label>
                 <input v-model.number="configForm.ban_threshold" type="number" min="1" max="1000" class="input" />
@@ -973,6 +1081,10 @@
                 {{ inputDetailRow.highest_category || '-' }} / {{ percent(inputDetailRow.highest_score) }}
               </p>
             </div>
+            <div v-if="inputDetailRow.matched_keyword" class="rounded-lg border border-red-100 bg-red-50 p-4 dark:border-red-900/60 dark:bg-red-900/20">
+              <p class="text-xs font-medium text-red-500 dark:text-red-300">{{ t('admin.riskControl.matchedKeyword') }}</p>
+              <p class="mt-1 truncate text-sm font-semibold text-red-700 dark:text-red-200" :title="inputDetailRow.matched_keyword">{{ inputDetailRow.matched_keyword }}</p>
+            </div>
           </div>
 
           <div class="rounded-xl border border-gray-100 bg-white p-4 shadow-sm dark:border-dark-700 dark:bg-dark-800">
@@ -1013,6 +1125,7 @@ import Pagination from '@/components/common/Pagination.vue'
 import ModelWhitelistSelector from '@/components/account/ModelWhitelistSelector.vue'
 import { adminAPI } from '@/api/admin'
 import type {
+  ContentModerationAPIKeyLoad,
   ContentModerationAPIKeyStatus,
   ContentModerationConfig,
   ContentModerationLog,
@@ -1078,6 +1191,7 @@ const riskThresholdCategories = Object.keys(riskThresholdDefaults)
 
 const { t } = useI18n()
 const appStore = useAppStore()
+const defaultBlockMessage = () => t('admin.riskControl.defaultBlockMessage')
 
 const loading = ref(true)
 const saving = ref(false)
@@ -1124,9 +1238,10 @@ const configForm = reactive({
   worker_count: 4,
   queue_size: 32768,
   block_status: 403,
-  block_message: '内容审计命中风险规则，请调整输入后重试',
+  block_message: defaultBlockMessage(),
   email_on_hit: true,
   auto_ban_enabled: true,
+  cyber_policy_exclude_from_ban_count: false,
   ban_threshold: 10,
   violation_window_hours: 720,
   hit_retention_days: 180,
@@ -1472,6 +1587,81 @@ const queueUsageStyle = computed(() => ({
   width: queueUsagePercent.value,
 }))
 
+const runtimeMode = computed<ModerationMode>(() => status.value?.mode ?? configForm.mode)
+
+const showPreBlockRuntimeCard = computed(() => runtimeMode.value === 'pre_block')
+
+const showWorkerRuntimeCard = computed(() => runtimeMode.value === 'observe')
+
+const preBlockMetricItems = computed(() => [
+  {
+    key: 'active',
+    label: t('admin.riskControl.preBlockActive'),
+    value: formatNumber(status.value?.pre_block_active ?? 0),
+    meta: t('admin.riskControl.preBlockActiveHint'),
+    class: 'bg-sky-50 dark:bg-sky-900/10',
+    valueClass: 'text-sky-700 dark:text-sky-300',
+  },
+  {
+    key: 'checked',
+    label: t('admin.riskControl.preBlockChecked'),
+    value: formatNumber(status.value?.pre_block_checked ?? 0),
+    meta: t('admin.riskControl.preBlockCheckedHint'),
+    class: 'bg-gray-50 dark:bg-dark-700/50',
+    valueClass: 'text-gray-900 dark:text-white',
+  },
+  {
+    key: 'allowed',
+    label: t('admin.riskControl.preBlockAllowed'),
+    value: formatNumber(status.value?.pre_block_allowed ?? 0),
+    meta: t('admin.riskControl.preBlockAllowedHint'),
+    class: 'bg-emerald-50 dark:bg-emerald-900/10',
+    valueClass: 'text-emerald-700 dark:text-emerald-300',
+  },
+  {
+    key: 'blocked',
+    label: t('admin.riskControl.preBlockBlocked'),
+    value: formatNumber(status.value?.pre_block_blocked ?? 0),
+    meta: t('admin.riskControl.preBlockBlockedHint'),
+    class: 'bg-rose-50 dark:bg-rose-900/10',
+    valueClass: 'text-rose-700 dark:text-rose-300',
+  },
+  {
+    key: 'errors',
+    label: t('admin.riskControl.preBlockErrors'),
+    value: formatNumber(status.value?.pre_block_errors ?? 0),
+    meta: t('admin.riskControl.preBlockErrorsHint'),
+    class: 'bg-amber-50 dark:bg-amber-900/10',
+    valueClass: 'text-amber-700 dark:text-amber-300',
+  },
+  {
+    key: 'latency',
+    label: t('admin.riskControl.preBlockAvgLatency'),
+    value: `${formatNumber(status.value?.pre_block_avg_latency_ms ?? 0)} ms`,
+    meta: t('admin.riskControl.preBlockAvgLatencyHint'),
+    class: 'bg-violet-50 dark:bg-violet-900/10',
+    valueClass: 'text-violet-700 dark:text-violet-300',
+  },
+])
+
+const preBlockAPIKeyLoads = computed<ContentModerationAPIKeyLoad[]>(() => (
+  [...(status.value?.pre_block_api_key_loads ?? [])].sort((a, b) => a.index - b.index)
+))
+
+const preBlockAPIKeyMaxTotal = computed(() => Math.max(1, ...preBlockAPIKeyLoads.value.map((item) => item.total || 0)))
+
+const preBlockAPIKeyLoadSummaryText = computed(() => t('admin.riskControl.preBlockAPIKeyLoadSummary', {
+  active: formatNumber(status.value?.pre_block_api_key_active ?? 0),
+  available: formatNumber(status.value?.pre_block_api_key_available_count ?? 0),
+  total: formatNumber(status.value?.pre_block_api_key_total_calls ?? 0),
+  workerActive: formatNumber(status.value?.active_workers ?? 0),
+  workerTotal: formatNumber(status.value?.worker_count ?? configForm.worker_count),
+}))
+
+function preBlockAPIKeyLoadWidth(total: number): string {
+  return `${Math.min(100, Math.max(0, (total / preBlockAPIKeyMaxTotal.value) * 100)).toFixed(1)}%`
+}
+
 const workerSlots = computed(() => {
   const total = Math.max(0, status.value?.worker_count ?? configForm.worker_count)
   const active = Math.max(0, status.value?.active_workers ?? 0)
@@ -1525,9 +1715,10 @@ function applyConfig(config: ContentModerationConfig) {
   configForm.worker_count = config.worker_count || 4
   configForm.queue_size = config.queue_size || 32768
   configForm.block_status = config.block_status || 403
-  configForm.block_message = config.block_message || '内容审计命中风险规则，请调整输入后重试'
+  configForm.block_message = config.block_message || defaultBlockMessage()
   configForm.email_on_hit = config.email_on_hit ?? true
   configForm.auto_ban_enabled = config.auto_ban_enabled ?? true
+  configForm.cyber_policy_exclude_from_ban_count = config.cyber_policy_exclude_from_ban_count ?? false
   configForm.ban_threshold = config.ban_threshold || 10
   configForm.violation_window_hours = config.violation_window_hours || 720
   configForm.hit_retention_days = config.hit_retention_days || 180
@@ -1605,9 +1796,10 @@ async function saveConfig() {
       worker_count: Number(configForm.worker_count) || 4,
       queue_size: Number(configForm.queue_size) || 32768,
       block_status: Number(configForm.block_status) || 403,
-      block_message: configForm.block_message || '内容审计命中风险规则，请调整输入后重试',
+      block_message: configForm.block_message || defaultBlockMessage(),
       email_on_hit: configForm.email_on_hit,
       auto_ban_enabled: configForm.auto_ban_enabled,
+      cyber_policy_exclude_from_ban_count: configForm.cyber_policy_exclude_from_ban_count,
       ban_threshold: Number(configForm.ban_threshold) || 10,
       violation_window_hours: Number(configForm.violation_window_hours) || 720,
       hit_retention_days: Number(configForm.hit_retention_days) || 180,
@@ -1923,6 +2115,7 @@ function modeDescription(mode: ModerationMode): string {
 }
 
 function resultLabel(row: ContentModerationLog): string {
+  if (row.action === 'cyber_policy') return t('admin.riskControl.action.cyberPolicy')
   if (row.action === 'keyword_block') return t('admin.riskControl.action.keywordBlock')
   if (row.action === 'block') return t('admin.riskControl.action.block')
   if (row.action === 'error' || row.error) return t('admin.riskControl.action.error')
@@ -1931,7 +2124,7 @@ function resultLabel(row: ContentModerationLog): string {
 }
 
 function resultBadgeClass(row: ContentModerationLog): string {
-  if (row.action === 'block' || row.action === 'keyword_block') return 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-300'
+  if (row.action === 'block' || row.action === 'keyword_block' || row.action === 'cyber_policy') return 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-300'
   if (row.action === 'error' || row.error) return 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300'
   if (row.flagged) return 'bg-pink-100 text-pink-700 dark:bg-pink-900/30 dark:text-pink-300'
   return 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300'
@@ -2129,6 +2322,7 @@ function parseBlockedKeywords(value: string): string[] {
 
 function violationCountText(row: ContentModerationLog): string {
   if (!row.flagged) return '-'
+  if (row.violation_count === 0) return t('admin.riskControl.violationNotCounted')
   return t('admin.riskControl.violationCount', { count: row.violation_count || 1 })
 }
 
