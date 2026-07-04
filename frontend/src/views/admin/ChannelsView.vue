@@ -760,7 +760,7 @@ const form = reactive({
 let abortController: AbortController | null = null
 
 // ── Platform config ──
-const platformOrder: GroupPlatform[] = ['anthropic', 'openai', 'gemini', 'antigravity', 'grok']
+const platformOrder: GroupPlatform[] = ['anthropic', 'openai', 'gemini', 'antigravity', 'grok', 'aliyun']
 
 // ── Helpers ──
 function formatDate(value: string): string {
@@ -857,6 +857,8 @@ function addPricingEntry(sectionIdx: number) {
     cache_read_price: null,
     image_output_price: null,
     per_request_price: null,
+    meter_unit: null,
+    meter_unit_price: null,
     intervals: []
   })
 }
@@ -889,6 +891,8 @@ async function syncLatestModels(sectionIdx: number) {
       cache_read_price: null,
       image_output_price: null,
       per_request_price: null,
+      meter_unit: null,
+      meter_unit_price: null,
       intervals: []
     })
     appStore.showSuccess(t('admin.channels.form.syncModelsSuccess', { count: newModels.length }))
@@ -953,6 +957,8 @@ function addRulePricingEntry(sectionIdx: number, ruleIndex: number) {
     cache_read_price: null,
     image_output_price: null,
     per_request_price: null,
+    meter_unit: null,
+    meter_unit_price: null,
     intervals: []
   })
 }
@@ -1068,6 +1074,8 @@ function accountStatsRulesToAPI(): AccountStatsPricingRule[] {
             cache_read_price: mTokToPerToken(p.cache_read_price),
             image_output_price: mTokToPerToken(p.image_output_price),
             per_request_price: p.per_request_price != null && p.per_request_price !== '' ? Number(p.per_request_price) : null,
+            meter_unit: p.meter_unit || null,
+            meter_unit_price: p.meter_unit_price != null && p.meter_unit_price !== '' ? Number(p.meter_unit_price) : null,
             intervals: formIntervalsToAPI(p.intervals || [])
           }))
       })
@@ -1108,6 +1116,8 @@ function formToAPI(): { group_ids: number[], model_pricing: ChannelModelPricing[
         cache_read_price: mTokToPerToken(entry.cache_read_price),
         image_output_price: mTokToPerToken(entry.image_output_price),
         per_request_price: entry.per_request_price != null && entry.per_request_price !== '' ? Number(entry.per_request_price) : null,
+        meter_unit: entry.meter_unit || null,
+        meter_unit_price: entry.meter_unit_price != null && entry.meter_unit_price !== '' ? Number(entry.meter_unit_price) : null,
         intervals: formIntervalsToAPI(entry.intervals || [])
       })
     }
@@ -1196,6 +1206,8 @@ function apiToForm(channel: Channel): PlatformSection[] {
         cache_read_price: perTokenToMTok(p.cache_read_price),
         image_output_price: perTokenToMTok(p.image_output_price),
         per_request_price: p.per_request_price,
+        meter_unit: p.meter_unit || null,
+        meter_unit_price: p.meter_unit_price,
         intervals: apiIntervalsToForm(p.intervals || [])
       } as PricingFormEntry))
 
@@ -1384,6 +1396,8 @@ function distributeRulesToPlatforms(apiRules: AccountStatsPricingRule[]) {
         cache_read_price: perTokenToMTok(p.cache_read_price),
         image_output_price: perTokenToMTok(p.image_output_price),
         per_request_price: p.per_request_price,
+        meter_unit: p.meter_unit || null,
+        meter_unit_price: p.meter_unit_price,
         intervals: apiIntervalsToForm(p.intervals || [])
       } as PricingFormEntry))
     }
@@ -1487,6 +1501,12 @@ async function handleSubmit() {
           (entry.per_request_price == null || entry.per_request_price === '') &&
           (!entry.intervals || entry.intervals.length === 0)) {
         appStore.showError(t('admin.channels.form.perRequestPriceRequired'))
+        return
+      }
+      if (entry.billing_mode === 'unit' &&
+          (!entry.meter_unit || entry.meter_unit.trim() === '' ||
+           entry.meter_unit_price == null || entry.meter_unit_price === '')) {
+        appStore.showError(t('admin.channels.form.unitPricingRequired', 'Unit billing requires meter unit and unit price'))
         return
       }
     }

@@ -144,10 +144,15 @@ type UsageLog struct {
 
 	InputCost         float64
 	OutputCost        float64
+	MeterCost         float64
 	CacheCreationCost float64
 	CacheReadCost     float64
 	TotalCost         float64
 	ActualCost        float64
+	MeterUnit         *string
+	MeterQuantity     *float64
+	MeterUnitPrice    *float64
+	MeterDetail       map[string]any
 	RateMultiplier    float64
 	// AccountRateMultiplier 账号计费倍率快照（nil 表示历史数据，按 1.0 处理）
 	AccountRateMultiplier *float64

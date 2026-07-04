@@ -200,6 +200,10 @@ func (s *AccountTestService) TestAccountConnection(c *gin.Context, accountID int
 		return s.routeAntigravityTest(c, account, modelID, prompt)
 	}
 
+	if account.IsAliyun() {
+		return s.testAliyunAccountConnection(c, account, modelID, prompt)
+	}
+
 	return s.testClaudeAccountConnection(c, account, modelID)
 }
 
@@ -720,6 +724,43 @@ func (s *AccountTestService) testGrokAccountConnection(c *gin.Context, account *
 	}
 
 	return s.processOpenAIStream(c, resp.Body)
+}
+
+func (s *AccountTestService) testAliyunAccountConnection(c *gin.Context, account *Account, modelID string, prompt string) error {
+	apiKey := account.GetAliyunAPIKey()
+	if apiKey == "" {
+		return s.sendErrorAndEnd(c, "No Aliyun API key available")
+	}
+	testModelID := strings.TrimSpace(modelID)
+	if testModelID == "" {
+		testModelID = "qwen-plus"
+	}
+	baseURL, err := s.validateUpstreamBaseURL(account.GetAliyunBaseURL())
+	if err != nil {
+		return s.sendErrorAndEnd(c, fmt.Sprintf("Invalid Aliyun base URL: %s", err.Error()))
+	}
+	compatibleBaseURL := normalizeAliyunCompatibleBaseURL(baseURL)
+	return s.testOpenAIChatCompletionsConnection(
+		c,
+		account,
+		testModelID,
+		prompt,
+		compatibleBaseURL,
+		apiKey,
+	)
+}
+
+func normalizeAliyunCompatibleBaseURL(baseURL string) string {
+	normalized := strings.TrimRight(strings.TrimSpace(baseURL), "/")
+	lower := strings.ToLower(normalized)
+	switch {
+	case strings.HasSuffix(lower, "/compatible-mode"),
+		strings.HasSuffix(lower, "/compatible-mode/v1"),
+		strings.HasSuffix(lower, "/compatible-mode/v1/chat/completions"):
+		return normalized
+	default:
+		return normalized + "/compatible-mode"
+	}
 }
 
 // testOpenAIChatCompletionsConnection tests an OpenAI-compatible APIKey account

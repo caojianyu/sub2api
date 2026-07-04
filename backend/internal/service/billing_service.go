@@ -153,11 +153,15 @@ type CostBreakdown struct {
 	InputCost         float64
 	OutputCost        float64
 	ImageOutputCost   float64
+	MeterCost         float64
 	CacheCreationCost float64
 	CacheReadCost     float64
 	TotalCost         float64
 	ActualCost        float64 // 应用倍率后的实际费用
-	BillingMode       string  // 计费模式（"token"/"per_request"/"image"），由 CalculateCostUnified 填充
+	MeterUnit         string
+	MeterQuantity     float64
+	MeterUnitPrice    float64
+	BillingMode       string // 计费模式（"token"/"per_request"/"image"/"unit"），由 CalculateCostUnified 填充
 }
 
 // ErrModelPricingUnavailable indicates that none of the configured pricing
@@ -788,6 +792,8 @@ type CostInput struct {
 	Tokens         UsageTokens
 	RequestCount   int    // 按次计费时使用
 	SizeTier       string // 按次/图片模式的层级标签（"1K","2K","4K","HD" 等）
+	MeterUnit      string // unit 模式的计量单位
+	MeterQuantity  float64
 	RateMultiplier float64
 	ServiceTier    string                // "priority","flex","" 等
 	Resolver       *ModelPricingResolver // 定价解析器
@@ -821,6 +827,8 @@ func (s *BillingService) CalculateCostUnified(input CostInput) (*CostBreakdown, 
 	switch resolved.Mode {
 	case BillingModePerRequest, BillingModeImage:
 		breakdown, err = s.calculatePerRequestCost(resolved, input)
+	case BillingModeUnit:
+		breakdown, err = s.calculateUnitCost(resolved, input)
 	default: // BillingModeToken
 		breakdown, err = s.calculateTokenCost(resolved, input)
 	}
@@ -993,6 +1001,34 @@ func (s *BillingService) calculatePerRequestCost(resolved *ResolvedPricing, inpu
 	return &CostBreakdown{
 		TotalCost:  totalCost,
 		ActualCost: actualCost,
+	}, nil
+}
+
+// calculateUnitCost bills supplier-native metered quantities such as characters,
+// seconds, voice enrollments, or embedding units.
+func (s *BillingService) calculateUnitCost(resolved *ResolvedPricing, input CostInput) (*CostBreakdown, error) {
+	if input.MeterQuantity <= 0 {
+		return nil, fmt.Errorf("meter quantity must be positive for model %s: %w", input.Model, ErrModelPricingUnavailable)
+	}
+	unit := strings.TrimSpace(input.MeterUnit)
+	if unit == "" {
+		unit = strings.TrimSpace(resolved.MeterUnit)
+	}
+	if unit == "" || !strings.EqualFold(unit, strings.TrimSpace(resolved.MeterUnit)) {
+		return nil, fmt.Errorf("meter unit mismatch for model %s: request=%q pricing=%q: %w", input.Model, input.MeterUnit, resolved.MeterUnit, ErrModelPricingUnavailable)
+	}
+	if resolved.MeterUnitPrice <= 0 {
+		return nil, fmt.Errorf("unit price unavailable for model %s unit %s: %w", input.Model, unit, ErrModelPricingUnavailable)
+	}
+	totalCost := resolved.MeterUnitPrice * input.MeterQuantity
+	actualCost := totalCost * input.RateMultiplier
+	return &CostBreakdown{
+		MeterCost:      totalCost,
+		TotalCost:      totalCost,
+		ActualCost:     actualCost,
+		MeterUnit:      unit,
+		MeterQuantity:  input.MeterQuantity,
+		MeterUnitPrice: resolved.MeterUnitPrice,
 	}, nil
 }
 

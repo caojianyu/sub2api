@@ -85,6 +85,21 @@ func RegisterGatewayRoutes(
 		})
 	}
 	// API网关（Claude API兼容）
+	aliyunNative := r.Group("/api/v1")
+	aliyunNative.Use(bodyLimit)
+	aliyunNative.Use(clientRequestID)
+	aliyunNative.Use(opsErrorLogger)
+	aliyunNative.Use(endpointNorm)
+	aliyunNative.Use(gin.HandlerFunc(apiKeyAuth))
+	aliyunNative.Use(requireGroupAnthropic)
+	{
+		aliyunNative.POST("/services/audio/tts/SpeechSynthesizer", h.AliyunGateway.Proxy)
+		aliyunNative.POST("/services/audio/asr/transcription", h.AliyunGateway.Proxy)
+		aliyunNative.GET("/tasks/:task_id", h.AliyunGateway.Proxy)
+		aliyunNative.POST("/services/audio/tts/customization", h.AliyunGateway.Proxy)
+		aliyunNative.POST("/services/embeddings/multimodal", h.AliyunGateway.Proxy)
+	}
+
 	gateway := r.Group("/v1")
 	gateway.Use(bodyLimit)
 	gateway.Use(clientRequestID)

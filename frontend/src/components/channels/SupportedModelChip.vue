@@ -121,6 +121,17 @@
               :scale="1"
             />
 
+            <PricingRow
+              v-if="
+                model.pricing.billing_mode === BILLING_MODE_UNIT &&
+                model.pricing.meter_unit_price != null
+              "
+              :label="model.pricing.meter_unit || t(prefixKey('unit'))"
+              :value="model.pricing.meter_unit_price"
+              :unit="t(prefixKey('unitPerMeter'))"
+              :scale="1"
+            />
+
             <div
               v-if="model.pricing.intervals && model.pricing.intervals.length > 0"
               class="mt-2 border-t pt-2"
@@ -159,6 +170,7 @@ import {
   BILLING_MODE_TOKEN,
   BILLING_MODE_PER_REQUEST,
   BILLING_MODE_IMAGE,
+  BILLING_MODE_UNIT,
   type BillingMode
 } from '@/constants/channel'
 // 复用 api/channels.ts 的用户侧最小形态 DTO。
@@ -222,6 +234,8 @@ const billingModeLabel = computed(() => {
       return t(prefixKey('billingModePerRequest'))
     case BILLING_MODE_IMAGE:
       return t(prefixKey('billingModeImage'))
+    case BILLING_MODE_UNIT:
+      return t(prefixKey('billingModeUnit'))
     default:
       return '-'
   }

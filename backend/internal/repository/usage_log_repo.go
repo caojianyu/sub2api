@@ -30,7 +30,7 @@ import (
 	"golang.org/x/sync/errgroup"
 )
 
-const usageLogSelectColumns = "id, user_id, api_key_id, account_id, request_id, model, requested_model, upstream_model, group_id, subscription_id, input_tokens, output_tokens, cache_creation_tokens, cache_read_tokens, cache_creation_5m_tokens, cache_creation_1h_tokens, image_output_tokens, image_output_cost, input_cost, output_cost, cache_creation_cost, cache_read_cost, total_cost, actual_cost, rate_multiplier, account_rate_multiplier, billing_type, request_type, stream, openai_ws_mode, duration_ms, first_token_ms, user_agent, ip_address, image_count, image_size, image_input_size, image_output_size, image_size_source, image_size_breakdown, service_tier, reasoning_effort, inbound_endpoint, upstream_endpoint, cache_ttl_overridden, channel_id, model_mapping_chain, billing_tier, billing_mode, account_stats_cost, created_at"
+const usageLogSelectColumns = "id, user_id, api_key_id, account_id, request_id, model, requested_model, upstream_model, group_id, subscription_id, input_tokens, output_tokens, cache_creation_tokens, cache_read_tokens, cache_creation_5m_tokens, cache_creation_1h_tokens, image_output_tokens, image_output_cost, input_cost, output_cost, meter_cost, cache_creation_cost, cache_read_cost, total_cost, actual_cost, rate_multiplier, account_rate_multiplier, billing_type, request_type, stream, openai_ws_mode, duration_ms, first_token_ms, user_agent, ip_address, image_count, image_size, image_input_size, image_output_size, image_size_source, image_size_breakdown, service_tier, reasoning_effort, inbound_endpoint, upstream_endpoint, cache_ttl_overridden, channel_id, model_mapping_chain, billing_tier, billing_mode, meter_unit, meter_quantity, meter_unit_price, meter_detail, account_stats_cost, created_at"
 
 // usageLogInsertArgTypes must stay in the same order as:
 //  1. prepareUsageLogInsert().args
@@ -59,6 +59,7 @@ var usageLogInsertArgTypes = [...]string{
 	"numeric",     // image_output_cost
 	"numeric",     // input_cost
 	"numeric",     // output_cost
+	"numeric",     // meter_cost
 	"numeric",     // cache_creation_cost
 	"numeric",     // cache_read_cost
 	"numeric",     // total_cost
@@ -88,6 +89,10 @@ var usageLogInsertArgTypes = [...]string{
 	"text",        // model_mapping_chain
 	"text",        // billing_tier
 	"text",        // billing_mode
+	"text",        // meter_unit
+	"numeric",     // meter_quantity
+	"numeric",     // meter_unit_price
+	"jsonb",       // meter_detail
 	"numeric",     // account_stats_cost
 	"timestamptz", // created_at
 }
@@ -418,6 +423,7 @@ func (r *usageLogRepository) createSingle(ctx context.Context, sqlq sqlExecutor,
 			image_output_cost,
 			input_cost,
 			output_cost,
+			meter_cost,
 			cache_creation_cost,
 			cache_read_cost,
 			total_cost,
@@ -447,6 +453,10 @@ func (r *usageLogRepository) createSingle(ctx context.Context, sqlq sqlExecutor,
 			model_mapping_chain,
 			billing_tier,
 			billing_mode,
+			meter_unit,
+			meter_quantity,
+			meter_unit_price,
+			meter_detail,
 			account_stats_cost,
 			created_at
 		) VALUES (
@@ -455,7 +465,7 @@ func (r *usageLogRepository) createSingle(ctx context.Context, sqlq sqlExecutor,
 			$10, $11, $12, $13,
 			$14, $15, $16, $17,
 			$18, $19, $20, $21, $22, $23,
-			$24, $25, $26, $27, $28, $29, $30, $31, $32, $33, $34, $35, $36, $37, $38, $39, $40, $41, $42, $43, $44, $45, $46, $47, $48, $49, $50
+			$24, $25, $26, $27, $28, $29, $30, $31, $32, $33, $34, $35, $36, $37, $38, $39, $40, $41, $42, $43, $44, $45, $46, $47, $48, $49, $50, $51, $52, $53, $54, $55
 		)
 		ON CONFLICT (request_id, api_key_id) DO NOTHING
 		RETURNING id, created_at
@@ -860,6 +870,7 @@ func buildUsageLogBatchInsertQuery(keys []string, preparedByKey map[string]usage
 			image_output_cost,
 			input_cost,
 			output_cost,
+			meter_cost,
 			cache_creation_cost,
 			cache_read_cost,
 			total_cost,
@@ -889,11 +900,15 @@ func buildUsageLogBatchInsertQuery(keys []string, preparedByKey map[string]usage
 			model_mapping_chain,
 			billing_tier,
 			billing_mode,
+			meter_unit,
+			meter_quantity,
+			meter_unit_price,
+			meter_detail,
 			account_stats_cost,
 			created_at
 		) AS (VALUES `)
 
-	args := make([]any, 0, len(keys)*50)
+	args := make([]any, 0, len(keys)*55)
 	argPos := 1
 	for idx, key := range keys {
 		if idx > 0 {
@@ -941,6 +956,7 @@ func buildUsageLogBatchInsertQuery(keys []string, preparedByKey map[string]usage
 				image_output_cost,
 				input_cost,
 				output_cost,
+				meter_cost,
 				cache_creation_cost,
 				cache_read_cost,
 				total_cost,
@@ -970,6 +986,10 @@ func buildUsageLogBatchInsertQuery(keys []string, preparedByKey map[string]usage
 				model_mapping_chain,
 				billing_tier,
 				billing_mode,
+				meter_unit,
+				meter_quantity,
+				meter_unit_price,
+				meter_detail,
 				account_stats_cost,
 				created_at
 			)
@@ -993,6 +1013,7 @@ func buildUsageLogBatchInsertQuery(keys []string, preparedByKey map[string]usage
 				image_output_cost,
 				input_cost,
 				output_cost,
+				meter_cost,
 				cache_creation_cost,
 				cache_read_cost,
 				total_cost,
@@ -1022,6 +1043,10 @@ func buildUsageLogBatchInsertQuery(keys []string, preparedByKey map[string]usage
 				model_mapping_chain,
 				billing_tier,
 				billing_mode,
+				meter_unit,
+				meter_quantity,
+				meter_unit_price,
+				meter_detail,
 				account_stats_cost,
 				created_at
 			FROM input
@@ -1085,6 +1110,7 @@ func buildUsageLogBestEffortInsertQuery(preparedList []usageLogInsertPrepared) (
 			image_output_cost,
 			input_cost,
 			output_cost,
+			meter_cost,
 			cache_creation_cost,
 			cache_read_cost,
 			total_cost,
@@ -1114,11 +1140,15 @@ func buildUsageLogBestEffortInsertQuery(preparedList []usageLogInsertPrepared) (
 			model_mapping_chain,
 			billing_tier,
 			billing_mode,
+			meter_unit,
+			meter_quantity,
+			meter_unit_price,
+			meter_detail,
 			account_stats_cost,
 			created_at
 		) AS (VALUES `)
 
-	args := make([]any, 0, len(preparedList)*50)
+	args := make([]any, 0, len(preparedList)*55)
 	argPos := 1
 	for idx, prepared := range preparedList {
 		if idx > 0 {
@@ -1163,6 +1193,7 @@ func buildUsageLogBestEffortInsertQuery(preparedList []usageLogInsertPrepared) (
 			image_output_cost,
 			input_cost,
 			output_cost,
+			meter_cost,
 			cache_creation_cost,
 			cache_read_cost,
 			total_cost,
@@ -1192,6 +1223,10 @@ func buildUsageLogBestEffortInsertQuery(preparedList []usageLogInsertPrepared) (
 			model_mapping_chain,
 			billing_tier,
 			billing_mode,
+			meter_unit,
+			meter_quantity,
+			meter_unit_price,
+			meter_detail,
 			account_stats_cost,
 			created_at
 		)
@@ -1215,6 +1250,7 @@ func buildUsageLogBestEffortInsertQuery(preparedList []usageLogInsertPrepared) (
 			image_output_cost,
 			input_cost,
 			output_cost,
+			meter_cost,
 			cache_creation_cost,
 			cache_read_cost,
 			total_cost,
@@ -1244,6 +1280,10 @@ func buildUsageLogBestEffortInsertQuery(preparedList []usageLogInsertPrepared) (
 			model_mapping_chain,
 			billing_tier,
 			billing_mode,
+			meter_unit,
+			meter_quantity,
+			meter_unit_price,
+			meter_detail,
 			account_stats_cost,
 			created_at
 		FROM input
@@ -1275,6 +1315,7 @@ func execUsageLogInsertNoResult(ctx context.Context, sqlq sqlExecutor, prepared 
 			image_output_cost,
 			input_cost,
 			output_cost,
+			meter_cost,
 			cache_creation_cost,
 			cache_read_cost,
 			total_cost,
@@ -1304,6 +1345,10 @@ func execUsageLogInsertNoResult(ctx context.Context, sqlq sqlExecutor, prepared 
 			model_mapping_chain,
 			billing_tier,
 			billing_mode,
+			meter_unit,
+			meter_quantity,
+			meter_unit_price,
+			meter_detail,
 			account_stats_cost,
 			created_at
 		) VALUES (
@@ -1312,7 +1357,7 @@ func execUsageLogInsertNoResult(ctx context.Context, sqlq sqlExecutor, prepared 
 			$10, $11, $12, $13,
 			$14, $15, $16, $17,
 			$18, $19, $20, $21, $22, $23,
-			$24, $25, $26, $27, $28, $29, $30, $31, $32, $33, $34, $35, $36, $37, $38, $39, $40, $41, $42, $43, $44, $45, $46, $47, $48, $49, $50
+			$24, $25, $26, $27, $28, $29, $30, $31, $32, $33, $34, $35, $36, $37, $38, $39, $40, $41, $42, $43, $44, $45, $46, $47, $48, $49, $50, $51, $52, $53, $54, $55
 		)
 		ON CONFLICT (request_id, api_key_id) DO NOTHING
 	`, prepared.args...)
@@ -1351,6 +1396,8 @@ func prepareUsageLogInsert(log *service.UsageLog) usageLogInsertPrepared {
 	modelMappingChain := nullString(log.ModelMappingChain)
 	billingTier := nullString(log.BillingTier)
 	billingMode := nullString(log.BillingMode)
+	meterUnit := nullString(log.MeterUnit)
+	meterDetail := nullAnyMapJSON(log.MeterDetail)
 	requestedModel := strings.TrimSpace(log.RequestedModel)
 	if requestedModel == "" {
 		requestedModel = strings.TrimSpace(log.Model)
@@ -1387,6 +1434,7 @@ func prepareUsageLogInsert(log *service.UsageLog) usageLogInsertPrepared {
 			log.ImageOutputCost,
 			log.InputCost,
 			log.OutputCost,
+			log.MeterCost,
 			log.CacheCreationCost,
 			log.CacheReadCost,
 			log.TotalCost,
@@ -1416,6 +1464,10 @@ func prepareUsageLogInsert(log *service.UsageLog) usageLogInsertPrepared {
 			modelMappingChain,
 			billingTier,
 			billingMode,
+			meterUnit,
+			log.MeterQuantity,
+			log.MeterUnitPrice,
+			meterDetail,
 			log.AccountStatsCost, // account_stats_cost
 			createdAt,
 		},
@@ -4325,6 +4377,7 @@ func scanUsageLog(scanner interface{ Scan(...any) error }) (*service.UsageLog, e
 		imageOutputCost       float64
 		inputCost             float64
 		outputCost            float64
+		meterCost             float64
 		cacheCreationCost     float64
 		cacheReadCost         float64
 		totalCost             float64
@@ -4354,6 +4407,10 @@ func scanUsageLog(scanner interface{ Scan(...any) error }) (*service.UsageLog, e
 		modelMappingChain     sql.NullString
 		billingTier           sql.NullString
 		billingMode           sql.NullString
+		meterUnit             sql.NullString
+		meterQuantity         sql.NullFloat64
+		meterUnitPrice        sql.NullFloat64
+		meterDetail           sql.NullString
 		accountStatsCost      sql.NullFloat64
 		createdAt             time.Time
 	)
@@ -4379,6 +4436,7 @@ func scanUsageLog(scanner interface{ Scan(...any) error }) (*service.UsageLog, e
 		&imageOutputCost,
 		&inputCost,
 		&outputCost,
+		&meterCost,
 		&cacheCreationCost,
 		&cacheReadCost,
 		&totalCost,
@@ -4408,6 +4466,10 @@ func scanUsageLog(scanner interface{ Scan(...any) error }) (*service.UsageLog, e
 		&modelMappingChain,
 		&billingTier,
 		&billingMode,
+		&meterUnit,
+		&meterQuantity,
+		&meterUnitPrice,
+		&meterDetail,
 		&accountStatsCost,
 		&createdAt,
 	); err != nil {
@@ -4431,6 +4493,7 @@ func scanUsageLog(scanner interface{ Scan(...any) error }) (*service.UsageLog, e
 		ImageOutputCost:       imageOutputCost,
 		InputCost:             inputCost,
 		OutputCost:            outputCost,
+		MeterCost:             meterCost,
 		CacheCreationCost:     cacheCreationCost,
 		CacheReadCost:         cacheReadCost,
 		TotalCost:             totalCost,
@@ -4515,6 +4578,16 @@ func scanUsageLog(scanner interface{ Scan(...any) error }) (*service.UsageLog, e
 	if billingMode.Valid {
 		log.BillingMode = &billingMode.String
 	}
+	if meterUnit.Valid {
+		log.MeterUnit = &meterUnit.String
+	}
+	if meterQuantity.Valid {
+		log.MeterQuantity = &meterQuantity.Float64
+	}
+	if meterUnitPrice.Valid {
+		log.MeterUnitPrice = &meterUnitPrice.Float64
+	}
+	log.MeterDetail = anyMapFromNullJSON(meterDetail)
 	if accountStatsCost.Valid {
 		log.AccountStatsCost = &accountStatsCost.Float64
 	}
@@ -4664,11 +4737,36 @@ func nullStringIntMapJSON(v map[string]int) any {
 	return string(payload)
 }
 
+func nullAnyMapJSON(v map[string]any) any {
+	if len(v) == 0 {
+		return nil
+	}
+	payload, err := json.Marshal(v)
+	if err != nil {
+		return nil
+	}
+	return string(payload)
+}
+
 func stringIntMapFromNullJSON(v sql.NullString) map[string]int {
 	if !v.Valid || strings.TrimSpace(v.String) == "" {
 		return nil
 	}
 	var out map[string]int
+	if err := json.Unmarshal([]byte(v.String), &out); err != nil {
+		return nil
+	}
+	if len(out) == 0 {
+		return nil
+	}
+	return out
+}
+
+func anyMapFromNullJSON(v sql.NullString) map[string]any {
+	if !v.Valid || strings.TrimSpace(v.String) == "" {
+		return nil
+	}
+	var out map[string]any
 	if err := json.Unmarshal([]byte(v.String), &out); err != nil {
 		return nil
 	}

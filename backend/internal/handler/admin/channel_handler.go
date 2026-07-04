@@ -59,13 +59,15 @@ type updateChannelRequest struct {
 type channelModelPricingRequest struct {
 	Platform         string                   `json:"platform" binding:"omitempty,max=50"`
 	Models           []string                 `json:"models" binding:"required,min=1,max=100"`
-	BillingMode      string                   `json:"billing_mode" binding:"omitempty,oneof=token per_request image"`
+	BillingMode      string                   `json:"billing_mode" binding:"omitempty,oneof=token per_request image unit"`
 	InputPrice       *float64                 `json:"input_price" binding:"omitempty,min=0"`
 	OutputPrice      *float64                 `json:"output_price" binding:"omitempty,min=0"`
 	CacheWritePrice  *float64                 `json:"cache_write_price" binding:"omitempty,min=0"`
 	CacheReadPrice   *float64                 `json:"cache_read_price" binding:"omitempty,min=0"`
 	ImageOutputPrice *float64                 `json:"image_output_price" binding:"omitempty,min=0"`
 	PerRequestPrice  *float64                 `json:"per_request_price" binding:"omitempty,min=0"`
+	MeterUnit        *string                  `json:"meter_unit" binding:"omitempty,max=50"`
+	MeterUnitPrice   *float64                 `json:"meter_unit_price" binding:"omitempty,min=0"`
 	Intervals        []pricingIntervalRequest `json:"intervals"`
 }
 
@@ -117,6 +119,8 @@ type channelModelPricingResponse struct {
 	CacheReadPrice   *float64                  `json:"cache_read_price"`
 	ImageOutputPrice *float64                  `json:"image_output_price"`
 	PerRequestPrice  *float64                  `json:"per_request_price"`
+	MeterUnit        *string                   `json:"meter_unit"`
+	MeterUnitPrice   *float64                  `json:"meter_unit_price"`
 	Intervals        []pricingIntervalResponse `json:"intervals"`
 }
 
@@ -224,6 +228,8 @@ func pricingToResponse(p *service.ChannelModelPricing) channelModelPricingRespon
 		CacheReadPrice:   p.CacheReadPrice,
 		ImageOutputPrice: p.ImageOutputPrice,
 		PerRequestPrice:  p.PerRequestPrice,
+		MeterUnit:        p.MeterUnit,
+		MeterUnitPrice:   p.MeterUnitPrice,
 		Intervals:        intervals,
 	}
 }
@@ -275,6 +281,8 @@ func pricingRequestToService(reqs []channelModelPricingRequest) []service.Channe
 			CacheReadPrice:   r.CacheReadPrice,
 			ImageOutputPrice: r.ImageOutputPrice,
 			PerRequestPrice:  r.PerRequestPrice,
+			MeterUnit:        r.MeterUnit,
+			MeterUnitPrice:   r.MeterUnitPrice,
 			Intervals:        intervals,
 		})
 	}

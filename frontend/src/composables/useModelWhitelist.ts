@@ -103,6 +103,15 @@ const qwenModels = [
   'qwq-32b', 'qwq-32b-preview'
 ]
 
+const aliyunModels = [
+  'qwen-long',
+  'qwen-plus',
+  'cosyvoice-v3-flash',
+  'qwen3-asr-flash-filetrans',
+  'voice-enrollment',
+  'qwen3-vl-embedding'
+]
+
 // DeepSeek
 const deepseekModels = [
   'deepseek-chat', 'deepseek-coder', 'deepseek-reasoner',
@@ -218,6 +227,7 @@ const allModelsList: string[] = [
   ...openaiModels,
   ...claudeModels,
   ...geminiModels,
+  ...aliyunModels,
   ...zhipuModels,
   ...qwenModels,
   ...deepseekModels,
@@ -287,6 +297,15 @@ const grokPresetMappings = [
   { label: 'Build 0.1', from: 'grok-build', to: 'grok-build-0.1', color: 'bg-cyan-100 text-cyan-700 hover:bg-cyan-200 dark:bg-cyan-900/30 dark:text-cyan-400' },
   { label: '4.20 Reasoning', from: 'grok-4.20-reasoning', to: 'grok-4.20-0309-reasoning', color: 'bg-indigo-100 text-indigo-700 hover:bg-indigo-200 dark:bg-indigo-900/30 dark:text-indigo-400' },
   { label: '4.20 Non Reasoning', from: 'grok-4.20-non-reasoning', to: 'grok-4.20-0309-non-reasoning', color: 'bg-violet-100 text-violet-700 hover:bg-violet-200 dark:bg-violet-900/30 dark:text-violet-400' }
+]
+
+const aliyunPresetMappings = [
+  { label: 'Qwen Plus', from: 'qwen-plus', to: 'qwen-plus', color: 'bg-cyan-100 text-cyan-700 hover:bg-cyan-200 dark:bg-cyan-900/30 dark:text-cyan-300' },
+  { label: 'Qwen Long', from: 'qwen-long', to: 'qwen-long', color: 'bg-sky-100 text-sky-700 hover:bg-sky-200 dark:bg-sky-900/30 dark:text-sky-300' },
+  { label: 'TTS', from: 'cosyvoice-v3-flash', to: 'cosyvoice-v3-flash', color: 'bg-teal-100 text-teal-700 hover:bg-teal-200 dark:bg-teal-900/30 dark:text-teal-300' },
+  { label: 'ASR', from: 'qwen3-asr-flash-filetrans', to: 'qwen3-asr-flash-filetrans', color: 'bg-blue-100 text-blue-700 hover:bg-blue-200 dark:bg-blue-900/30 dark:text-blue-300' },
+  { label: 'Voice', from: 'voice-enrollment', to: 'voice-enrollment', color: 'bg-violet-100 text-violet-700 hover:bg-violet-200 dark:bg-violet-900/30 dark:text-violet-300' },
+  { label: 'VL Embedding', from: 'qwen3-vl-embedding', to: 'qwen3-vl-embedding', color: 'bg-emerald-100 text-emerald-700 hover:bg-emerald-200 dark:bg-emerald-900/30 dark:text-emerald-300' }
 ]
 
 // Antigravity 预设映射（支持通配符）
@@ -382,6 +401,7 @@ export function getModelsByPlatform(platform: string): string[] {
     case 'anthropic':
     case 'claude': return claudeModels
     case 'gemini': return geminiModels
+    case 'aliyun': return aliyunModels
     case 'antigravity': return antigravityModels
     case 'zhipu': return zhipuModels
     case 'qwen': return qwenModels
@@ -408,6 +428,7 @@ export function getPresetMappingsByPlatform(platform: string) {
   if (platform === 'openai') return openaiPresetMappings
   if (platform === 'gemini') return geminiPresetMappings
   if (platform === 'grok' || platform === 'xai') return grokPresetMappings
+  if (platform === 'aliyun') return aliyunPresetMappings
   if (platform === 'antigravity') return antigravityPresetMappings
   if (platform === 'bedrock') return bedrockPresetMappings
   return anthropicPresetMappings

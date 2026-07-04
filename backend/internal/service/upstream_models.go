@@ -133,6 +133,8 @@ func (s *AccountTestService) buildUpstreamModelsRequest(ctx context.Context, acc
 		return s.buildAntigravityAPIKeyModelsRequest(ctx, account)
 	case account.IsOpenAI():
 		return s.buildOpenAIUpstreamModelsRequest(ctx, account)
+	case account.IsAliyun():
+		return s.buildAliyunUpstreamModelsRequest(ctx, account)
 	case account.IsGemini():
 		return s.buildGeminiUpstreamModelsRequest(ctx, account)
 	case account.IsAnthropic():
@@ -280,6 +282,29 @@ func (s *AccountTestService) buildOpenAIUpstreamModelsRequest(ctx context.Contex
 	return req, nil
 }
 
+func (s *AccountTestService) buildAliyunUpstreamModelsRequest(ctx context.Context, account *Account) (*http.Request, error) {
+	if account.Type != AccountTypeAPIKey {
+		return nil, newUpstreamModelSyncUnsupportedError(
+			fmt.Sprintf("Unsupported Aliyun account type for upstream model sync: %s", account.Type), nil,
+		)
+	}
+	apiKey := strings.TrimSpace(account.GetAliyunAPIKey())
+	if apiKey == "" {
+		return nil, newUpstreamModelSyncConfigError("No Aliyun API key is available", nil)
+	}
+	normalizedBaseURL, err := s.validateUpstreamBaseURL(account.GetAliyunBaseURL())
+	if err != nil {
+		return nil, newUpstreamModelSyncConfigError("Invalid Aliyun base URL", err)
+	}
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, buildAliyunCompatibleModelsURL(normalizedBaseURL), nil)
+	if err != nil {
+		return nil, newUpstreamModelSyncConfigError("Invalid Aliyun model list URL", err)
+	}
+	req.Header.Set("Accept", "application/json")
+	req.Header.Set("Authorization", "Bearer "+apiKey)
+	return req, nil
+}
+
 func (s *AccountTestService) buildGeminiUpstreamModelsRequest(ctx context.Context, account *Account) (*http.Request, error) {
 	baseURL := account.GetGeminiBaseURL(geminicli.AIStudioBaseURL)
 	if strings.TrimSpace(baseURL) == "" {
@@ -395,6 +420,20 @@ func buildOpenAIModelsURL(base string) string {
 		return normalized + "/models"
 	}
 	return normalized + "/v1/models"
+}
+
+func buildAliyunCompatibleModelsURL(base string) string {
+	normalized := strings.TrimRight(strings.TrimSpace(base), "/")
+	if strings.HasSuffix(normalized, "/compatible-mode/v1/models") {
+		return normalized
+	}
+	if strings.HasSuffix(normalized, "/compatible-mode/v1") {
+		return normalized + "/models"
+	}
+	if strings.HasSuffix(normalized, "/compatible-mode") {
+		return normalized + "/v1/models"
+	}
+	return normalized + "/compatible-mode/v1/models"
 }
 
 func buildGeminiModelsURL(base string) string {

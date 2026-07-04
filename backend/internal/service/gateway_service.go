@@ -9194,6 +9194,7 @@ func buildUsageBillingCommand(requestID string, usageLog *UsageLog, p *postUsage
 		cmd.CacheCreationTokens = usageLog.CacheCreationTokens
 		cmd.CacheReadTokens = usageLog.CacheReadTokens
 		cmd.ImageCount = usageLog.ImageCount
+		cmd.MeterCost = usageLog.MeterCost
 		if usageLog.ServiceTier != nil {
 			cmd.ServiceTier = *usageLog.ServiceTier
 		}
@@ -9202,6 +9203,12 @@ func buildUsageBillingCommand(requestID string, usageLog *UsageLog, p *postUsage
 		}
 		if usageLog.SubscriptionID != nil {
 			cmd.SubscriptionID = usageLog.SubscriptionID
+		}
+		if usageLog.MeterUnit != nil {
+			cmd.MeterUnit = *usageLog.MeterUnit
+		}
+		if usageLog.MeterQuantity != nil {
+			cmd.MeterQuantity = *usageLog.MeterQuantity
 		}
 	}
 

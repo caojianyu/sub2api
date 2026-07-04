@@ -1138,15 +1138,18 @@ export default {
       billingModeToken: '按 Token',
       billingModePerRequest: '按次',
       billingModeImage: '按图片',
+      billingModeUnit: '按单位',
       inputPrice: '输入',
       outputPrice: '输出',
       cacheWritePrice: '缓存写入',
       cacheReadPrice: '缓存读取',
       imageOutputPrice: '图片输出',
       perRequestPrice: '每次请求',
+      unit: '单位',
       intervals: '阶梯定价',
       unitPerMillion: '/ 1M token',
-      unitPerRequest: '/ 次'
+      unitPerRequest: '/ 次',
+      unitPerMeter: '/ 单位'
     }
   },
 
@@ -2286,6 +2289,7 @@ export default {
         gemini: 'Gemini',
         antigravity: 'Antigravity',
         grok: 'Grok',
+        aliyun: 'Aliyun',
       },
       saving: '保存中...',
       noGroups: '暂无分组',
@@ -2506,15 +2510,18 @@ export default {
         billingModeToken: '按 Token',
         billingModePerRequest: '按次',
         billingModeImage: '按图片',
+        billingModeUnit: '按单位',
         inputPrice: '输入',
         outputPrice: '输出',
         cacheWritePrice: '缓存写入',
         cacheReadPrice: '缓存读取',
         imageOutputPrice: '图片输出',
         perRequestPrice: '每次请求',
+        unit: '单位',
         intervals: '阶梯定价',
         unitPerMillion: '/ 1M token',
-        unitPerRequest: '/ 次'
+        unitPerRequest: '/ 次',
+        unitPerMeter: '/ 单位'
       }
     },
 
@@ -2572,7 +2579,8 @@ export default {
       billingMode: {
         token: 'Token',
         perRequest: '按次',
-        image: '图片（按次）'
+        image: '图片（按次）',
+        unit: '按单位'
       },
       form: {
         name: '名称',
@@ -2610,6 +2618,10 @@ export default {
         noPricingRules: '暂无定价规则，点击"添加"创建',
         perRequestPrice: '单次价格',
         perRequestPriceRequired: '按次/图片计费模式必须设置默认价格或至少一个计费层级',
+        unitPricing: '单位计费',
+        meterUnit: '计量单位',
+        meterUnitPrice: '单位价格',
+        unitPricingRequired: '单位计费必须设置计量单位和单位价格',
         tierLabel: '层级',
         resolution: '分辨率',
         modelMapping: '模型映射',
@@ -3403,6 +3415,7 @@ export default {
         gemini: 'Gemini',
         antigravity: 'Antigravity',
         grok: 'Grok',
+        aliyun: 'Aliyun',
       },
       types: {
         oauth: 'OAuth',
@@ -3764,6 +3777,10 @@ export default {
       grok: {
         baseUrlHint: 'Grok OAuth 账号会转发到官方 xAI API Base URL。',
         apiKeyHint: 'Grok 订阅支持使用 OAuth refresh token；API Key 账号不在本次范围内。'
+      },
+      aliyun: {
+        baseUrlHint: '留空使用官方 DashScope API，或填写 model-router Base URL。',
+        apiKeyHint: '您的 DashScope API Key。'
       },
       anthropic: {
         apiKeyPassthrough: '自动透传（仅替换认证）',
@@ -4952,6 +4969,7 @@ export default {
       billingModeToken: '按量',
       billingModePerRequest: '按次',
       billingModeImage: '按次(图片)',
+      billingModeUnit: '按单位',
       allBillingModes: '全部计费模式',
       ipAddress: 'IP',
       clickToViewBalance: '点击查看充值记录',

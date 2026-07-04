@@ -3,6 +3,7 @@ package service
 import (
 	"context"
 	"log/slog"
+	"strings"
 )
 
 // PricingSource 定价来源标识
@@ -28,6 +29,10 @@ type ResolvedPricing struct {
 
 	// 按次/图片模式：默认价格（未命中层级时使用）
 	DefaultPerRequestPrice float64
+
+	// unit 模式：供应商原生计量单位和单价
+	MeterUnit      string
+	MeterUnitPrice float64
 
 	// 来源标识
 	Source string // "channel", "litellm", "fallback"
@@ -72,13 +77,17 @@ func (r *ModelPricingResolver) Resolve(ctx context.Context, input PricingInput) 
 			if mode == "" {
 				mode = BillingModeToken
 			}
-			if mode == BillingModePerRequest || mode == BillingModeImage {
+			if mode == BillingModePerRequest || mode == BillingModeImage || mode == BillingModeUnit {
 				resolved := &ResolvedPricing{
 					Mode:           mode,
 					Source:         PricingSourceChannel,
 					channelPricing: chPricing,
 				}
-				r.applyRequestTierOverrides(chPricing, resolved)
+				if mode == BillingModeUnit {
+					r.applyUnitOverrides(chPricing, resolved)
+				} else {
+					r.applyRequestTierOverrides(chPricing, resolved)
+				}
 				return resolved
 			}
 		}
@@ -136,6 +145,8 @@ func (r *ModelPricingResolver) applyChannelOverrides(ctx context.Context, groupI
 		r.applyTokenOverrides(chPricing, resolved)
 	case BillingModePerRequest, BillingModeImage:
 		r.applyRequestTierOverrides(chPricing, resolved)
+	case BillingModeUnit:
+		r.applyUnitOverrides(chPricing, resolved)
 	}
 }
 
@@ -196,6 +207,16 @@ func (r *ModelPricingResolver) applyRequestTierOverrides(chPricing *ChannelModel
 	resolved.RequestTiers = filterValidIntervals(chPricing.Intervals)
 	if chPricing.PerRequestPrice != nil {
 		resolved.DefaultPerRequestPrice = *chPricing.PerRequestPrice
+	}
+}
+
+// applyUnitOverrides applies channel-native unit pricing.
+func (r *ModelPricingResolver) applyUnitOverrides(chPricing *ChannelModelPricing, resolved *ResolvedPricing) {
+	if chPricing.MeterUnit != nil {
+		resolved.MeterUnit = strings.TrimSpace(*chPricing.MeterUnit)
+	}
+	if chPricing.MeterUnitPrice != nil {
+		resolved.MeterUnitPrice = *chPricing.MeterUnitPrice
 	}
 }
 

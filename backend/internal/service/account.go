@@ -224,6 +224,10 @@ func (a *Account) IsGrok() bool {
 	return a.Platform == PlatformGrok
 }
 
+func (a *Account) IsAliyun() bool {
+	return a.Platform == PlatformAliyun
+}
+
 func (a *Account) IsGrokOAuth() bool {
 	return a.IsGrok() && a.Type == AccountTypeOAuth
 }
@@ -1174,6 +1178,24 @@ func (a *Account) GetGrokBaseURL() string {
 		return baseURL
 	}
 	return xai.DefaultBaseURL
+}
+
+func (a *Account) GetAliyunBaseURL() string {
+	if !a.IsAliyun() {
+		return ""
+	}
+	baseURL := strings.TrimSpace(a.GetCredential("base_url"))
+	if baseURL != "" {
+		return strings.TrimRight(baseURL, "/")
+	}
+	return "https://dashscope.aliyuncs.com"
+}
+
+func (a *Account) GetAliyunAPIKey() string {
+	if !a.IsAliyun() || a.Type != AccountTypeAPIKey {
+		return ""
+	}
+	return strings.TrimSpace(a.GetCredential("api_key"))
 }
 
 func (a *Account) GetGrokAccessToken() string {

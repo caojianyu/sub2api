@@ -221,6 +221,26 @@
             />
           </div>
         </div>
+
+        <!-- Unit mode -->
+        <div v-else-if="entry.billing_mode === 'unit'">
+          <label class="mt-3 block text-xs font-medium text-gray-500 dark:text-gray-400">
+            {{ t('admin.channels.form.unitPricing') }}
+            <span class="ml-1 font-normal text-gray-400">$ / unit</span>
+          </label>
+          <div class="mt-1 grid grid-cols-1 gap-2 sm:grid-cols-2">
+            <div>
+              <label class="text-xs text-gray-400">{{ t('admin.channels.form.meterUnit') }}</label>
+              <input :value="entry.meter_unit || ''" @input="emitField('meter_unit', ($event.target as HTMLInputElement).value)"
+                type="text" class="input mt-0.5 text-sm" placeholder="character / audio_second / voice / token" />
+            </div>
+            <div>
+              <label class="text-xs text-gray-400">{{ t('admin.channels.form.meterUnitPrice') }}</label>
+              <input :value="entry.meter_unit_price" @input="emitField('meter_unit_price', ($event.target as HTMLInputElement).value)"
+                type="number" step="any" min="0" class="input mt-0.5 text-sm" :placeholder="t('admin.channels.form.pricePlaceholder')" />
+            </div>
+          </div>
+        </div>
       </div>
     </div>
   </div>
@@ -256,7 +276,8 @@ const collapsed = ref(props.entry.models.length > 0)
 const billingModeOptions = computed(() => [
   { value: 'token', label: t('admin.channels.billingMode.token') },
   { value: 'per_request', label: t('admin.channels.billingMode.perRequest') },
-  { value: 'image', label: t('admin.channels.billingMode.image') }
+  { value: 'image', label: t('admin.channels.billingMode.image') },
+  { value: 'unit', label: t('admin.channels.billingMode.unit') }
 ])
 
 const billingModeLabel = computed(() => {

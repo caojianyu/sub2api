@@ -491,7 +491,7 @@ export interface PaginationConfig {
 
 // ==================== API Key & Group Types ====================
 
-export type GroupPlatform = 'anthropic' | 'openai' | 'gemini' | 'antigravity' | 'grok'
+export type GroupPlatform = 'anthropic' | 'openai' | 'gemini' | 'antigravity' | 'grok' | 'aliyun'
 
 export type SubscriptionType = 'standard' | 'subscription'
 
@@ -707,7 +707,7 @@ export interface UpdateGroupRequest {
 
 // ==================== Account & Proxy Types ====================
 
-export type AccountPlatform = 'anthropic' | 'openai' | 'gemini' | 'antigravity' | 'grok'
+export type AccountPlatform = 'anthropic' | 'openai' | 'gemini' | 'antigravity' | 'grok' | 'aliyun'
 export type AccountType = 'oauth' | 'setup-token' | 'apikey' | 'upstream' | 'bedrock' | 'service_account'
 export type OAuthAddMethod = 'oauth' | 'setup-token'
 export type ProxyProtocol = 'http' | 'https' | 'socks5' | 'socks5h'
@@ -1294,6 +1294,7 @@ export interface UsageLog {
 
   input_cost: number
   output_cost: number
+  meter_cost: number
   cache_creation_cost: number
   cache_read_cost: number
   total_cost: number
@@ -1326,6 +1327,10 @@ export interface UsageLog {
 
   // 计费模式
   billing_mode?: string | null
+  meter_unit?: string | null
+  meter_quantity?: number | null
+  meter_unit_price?: number | null
+  meter_detail?: Record<string, unknown> | null
 
   created_at: string
 
