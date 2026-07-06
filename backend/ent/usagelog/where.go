@@ -160,6 +160,11 @@ func OutputCost(v float64) predicate.UsageLog {
 	return predicate.UsageLog(sql.FieldEQ(FieldOutputCost, v))
 }
 
+// MeterCost applies equality check predicate on the "meter_cost" field. It's identical to MeterCostEQ.
+func MeterCost(v float64) predicate.UsageLog {
+	return predicate.UsageLog(sql.FieldEQ(FieldMeterCost, v))
+}
+
 // CacheCreationCost applies equality check predicate on the "cache_creation_cost" field. It's identical to CacheCreationCostEQ.
 func CacheCreationCost(v float64) predicate.UsageLog {
 	return predicate.UsageLog(sql.FieldEQ(FieldCacheCreationCost, v))
@@ -178,6 +183,21 @@ func TotalCost(v float64) predicate.UsageLog {
 // ActualCost applies equality check predicate on the "actual_cost" field. It's identical to ActualCostEQ.
 func ActualCost(v float64) predicate.UsageLog {
 	return predicate.UsageLog(sql.FieldEQ(FieldActualCost, v))
+}
+
+// MeterUnit applies equality check predicate on the "meter_unit" field. It's identical to MeterUnitEQ.
+func MeterUnit(v string) predicate.UsageLog {
+	return predicate.UsageLog(sql.FieldEQ(FieldMeterUnit, v))
+}
+
+// MeterQuantity applies equality check predicate on the "meter_quantity" field. It's identical to MeterQuantityEQ.
+func MeterQuantity(v float64) predicate.UsageLog {
+	return predicate.UsageLog(sql.FieldEQ(FieldMeterQuantity, v))
+}
+
+// MeterUnitPrice applies equality check predicate on the "meter_unit_price" field. It's identical to MeterUnitPriceEQ.
+func MeterUnitPrice(v float64) predicate.UsageLog {
+	return predicate.UsageLog(sql.FieldEQ(FieldMeterUnitPrice, v))
 }
 
 // RateMultiplier applies equality check predicate on the "rate_multiplier" field. It's identical to RateMultiplierEQ.
@@ -1250,6 +1270,46 @@ func OutputCostLTE(v float64) predicate.UsageLog {
 	return predicate.UsageLog(sql.FieldLTE(FieldOutputCost, v))
 }
 
+// MeterCostEQ applies the EQ predicate on the "meter_cost" field.
+func MeterCostEQ(v float64) predicate.UsageLog {
+	return predicate.UsageLog(sql.FieldEQ(FieldMeterCost, v))
+}
+
+// MeterCostNEQ applies the NEQ predicate on the "meter_cost" field.
+func MeterCostNEQ(v float64) predicate.UsageLog {
+	return predicate.UsageLog(sql.FieldNEQ(FieldMeterCost, v))
+}
+
+// MeterCostIn applies the In predicate on the "meter_cost" field.
+func MeterCostIn(vs ...float64) predicate.UsageLog {
+	return predicate.UsageLog(sql.FieldIn(FieldMeterCost, vs...))
+}
+
+// MeterCostNotIn applies the NotIn predicate on the "meter_cost" field.
+func MeterCostNotIn(vs ...float64) predicate.UsageLog {
+	return predicate.UsageLog(sql.FieldNotIn(FieldMeterCost, vs...))
+}
+
+// MeterCostGT applies the GT predicate on the "meter_cost" field.
+func MeterCostGT(v float64) predicate.UsageLog {
+	return predicate.UsageLog(sql.FieldGT(FieldMeterCost, v))
+}
+
+// MeterCostGTE applies the GTE predicate on the "meter_cost" field.
+func MeterCostGTE(v float64) predicate.UsageLog {
+	return predicate.UsageLog(sql.FieldGTE(FieldMeterCost, v))
+}
+
+// MeterCostLT applies the LT predicate on the "meter_cost" field.
+func MeterCostLT(v float64) predicate.UsageLog {
+	return predicate.UsageLog(sql.FieldLT(FieldMeterCost, v))
+}
+
+// MeterCostLTE applies the LTE predicate on the "meter_cost" field.
+func MeterCostLTE(v float64) predicate.UsageLog {
+	return predicate.UsageLog(sql.FieldLTE(FieldMeterCost, v))
+}
+
 // CacheCreationCostEQ applies the EQ predicate on the "cache_creation_cost" field.
 func CacheCreationCostEQ(v float64) predicate.UsageLog {
 	return predicate.UsageLog(sql.FieldEQ(FieldCacheCreationCost, v))
@@ -1408,6 +1468,191 @@ func ActualCostLT(v float64) predicate.UsageLog {
 // ActualCostLTE applies the LTE predicate on the "actual_cost" field.
 func ActualCostLTE(v float64) predicate.UsageLog {
 	return predicate.UsageLog(sql.FieldLTE(FieldActualCost, v))
+}
+
+// MeterUnitEQ applies the EQ predicate on the "meter_unit" field.
+func MeterUnitEQ(v string) predicate.UsageLog {
+	return predicate.UsageLog(sql.FieldEQ(FieldMeterUnit, v))
+}
+
+// MeterUnitNEQ applies the NEQ predicate on the "meter_unit" field.
+func MeterUnitNEQ(v string) predicate.UsageLog {
+	return predicate.UsageLog(sql.FieldNEQ(FieldMeterUnit, v))
+}
+
+// MeterUnitIn applies the In predicate on the "meter_unit" field.
+func MeterUnitIn(vs ...string) predicate.UsageLog {
+	return predicate.UsageLog(sql.FieldIn(FieldMeterUnit, vs...))
+}
+
+// MeterUnitNotIn applies the NotIn predicate on the "meter_unit" field.
+func MeterUnitNotIn(vs ...string) predicate.UsageLog {
+	return predicate.UsageLog(sql.FieldNotIn(FieldMeterUnit, vs...))
+}
+
+// MeterUnitGT applies the GT predicate on the "meter_unit" field.
+func MeterUnitGT(v string) predicate.UsageLog {
+	return predicate.UsageLog(sql.FieldGT(FieldMeterUnit, v))
+}
+
+// MeterUnitGTE applies the GTE predicate on the "meter_unit" field.
+func MeterUnitGTE(v string) predicate.UsageLog {
+	return predicate.UsageLog(sql.FieldGTE(FieldMeterUnit, v))
+}
+
+// MeterUnitLT applies the LT predicate on the "meter_unit" field.
+func MeterUnitLT(v string) predicate.UsageLog {
+	return predicate.UsageLog(sql.FieldLT(FieldMeterUnit, v))
+}
+
+// MeterUnitLTE applies the LTE predicate on the "meter_unit" field.
+func MeterUnitLTE(v string) predicate.UsageLog {
+	return predicate.UsageLog(sql.FieldLTE(FieldMeterUnit, v))
+}
+
+// MeterUnitContains applies the Contains predicate on the "meter_unit" field.
+func MeterUnitContains(v string) predicate.UsageLog {
+	return predicate.UsageLog(sql.FieldContains(FieldMeterUnit, v))
+}
+
+// MeterUnitHasPrefix applies the HasPrefix predicate on the "meter_unit" field.
+func MeterUnitHasPrefix(v string) predicate.UsageLog {
+	return predicate.UsageLog(sql.FieldHasPrefix(FieldMeterUnit, v))
+}
+
+// MeterUnitHasSuffix applies the HasSuffix predicate on the "meter_unit" field.
+func MeterUnitHasSuffix(v string) predicate.UsageLog {
+	return predicate.UsageLog(sql.FieldHasSuffix(FieldMeterUnit, v))
+}
+
+// MeterUnitIsNil applies the IsNil predicate on the "meter_unit" field.
+func MeterUnitIsNil() predicate.UsageLog {
+	return predicate.UsageLog(sql.FieldIsNull(FieldMeterUnit))
+}
+
+// MeterUnitNotNil applies the NotNil predicate on the "meter_unit" field.
+func MeterUnitNotNil() predicate.UsageLog {
+	return predicate.UsageLog(sql.FieldNotNull(FieldMeterUnit))
+}
+
+// MeterUnitEqualFold applies the EqualFold predicate on the "meter_unit" field.
+func MeterUnitEqualFold(v string) predicate.UsageLog {
+	return predicate.UsageLog(sql.FieldEqualFold(FieldMeterUnit, v))
+}
+
+// MeterUnitContainsFold applies the ContainsFold predicate on the "meter_unit" field.
+func MeterUnitContainsFold(v string) predicate.UsageLog {
+	return predicate.UsageLog(sql.FieldContainsFold(FieldMeterUnit, v))
+}
+
+// MeterQuantityEQ applies the EQ predicate on the "meter_quantity" field.
+func MeterQuantityEQ(v float64) predicate.UsageLog {
+	return predicate.UsageLog(sql.FieldEQ(FieldMeterQuantity, v))
+}
+
+// MeterQuantityNEQ applies the NEQ predicate on the "meter_quantity" field.
+func MeterQuantityNEQ(v float64) predicate.UsageLog {
+	return predicate.UsageLog(sql.FieldNEQ(FieldMeterQuantity, v))
+}
+
+// MeterQuantityIn applies the In predicate on the "meter_quantity" field.
+func MeterQuantityIn(vs ...float64) predicate.UsageLog {
+	return predicate.UsageLog(sql.FieldIn(FieldMeterQuantity, vs...))
+}
+
+// MeterQuantityNotIn applies the NotIn predicate on the "meter_quantity" field.
+func MeterQuantityNotIn(vs ...float64) predicate.UsageLog {
+	return predicate.UsageLog(sql.FieldNotIn(FieldMeterQuantity, vs...))
+}
+
+// MeterQuantityGT applies the GT predicate on the "meter_quantity" field.
+func MeterQuantityGT(v float64) predicate.UsageLog {
+	return predicate.UsageLog(sql.FieldGT(FieldMeterQuantity, v))
+}
+
+// MeterQuantityGTE applies the GTE predicate on the "meter_quantity" field.
+func MeterQuantityGTE(v float64) predicate.UsageLog {
+	return predicate.UsageLog(sql.FieldGTE(FieldMeterQuantity, v))
+}
+
+// MeterQuantityLT applies the LT predicate on the "meter_quantity" field.
+func MeterQuantityLT(v float64) predicate.UsageLog {
+	return predicate.UsageLog(sql.FieldLT(FieldMeterQuantity, v))
+}
+
+// MeterQuantityLTE applies the LTE predicate on the "meter_quantity" field.
+func MeterQuantityLTE(v float64) predicate.UsageLog {
+	return predicate.UsageLog(sql.FieldLTE(FieldMeterQuantity, v))
+}
+
+// MeterQuantityIsNil applies the IsNil predicate on the "meter_quantity" field.
+func MeterQuantityIsNil() predicate.UsageLog {
+	return predicate.UsageLog(sql.FieldIsNull(FieldMeterQuantity))
+}
+
+// MeterQuantityNotNil applies the NotNil predicate on the "meter_quantity" field.
+func MeterQuantityNotNil() predicate.UsageLog {
+	return predicate.UsageLog(sql.FieldNotNull(FieldMeterQuantity))
+}
+
+// MeterUnitPriceEQ applies the EQ predicate on the "meter_unit_price" field.
+func MeterUnitPriceEQ(v float64) predicate.UsageLog {
+	return predicate.UsageLog(sql.FieldEQ(FieldMeterUnitPrice, v))
+}
+
+// MeterUnitPriceNEQ applies the NEQ predicate on the "meter_unit_price" field.
+func MeterUnitPriceNEQ(v float64) predicate.UsageLog {
+	return predicate.UsageLog(sql.FieldNEQ(FieldMeterUnitPrice, v))
+}
+
+// MeterUnitPriceIn applies the In predicate on the "meter_unit_price" field.
+func MeterUnitPriceIn(vs ...float64) predicate.UsageLog {
+	return predicate.UsageLog(sql.FieldIn(FieldMeterUnitPrice, vs...))
+}
+
+// MeterUnitPriceNotIn applies the NotIn predicate on the "meter_unit_price" field.
+func MeterUnitPriceNotIn(vs ...float64) predicate.UsageLog {
+	return predicate.UsageLog(sql.FieldNotIn(FieldMeterUnitPrice, vs...))
+}
+
+// MeterUnitPriceGT applies the GT predicate on the "meter_unit_price" field.
+func MeterUnitPriceGT(v float64) predicate.UsageLog {
+	return predicate.UsageLog(sql.FieldGT(FieldMeterUnitPrice, v))
+}
+
+// MeterUnitPriceGTE applies the GTE predicate on the "meter_unit_price" field.
+func MeterUnitPriceGTE(v float64) predicate.UsageLog {
+	return predicate.UsageLog(sql.FieldGTE(FieldMeterUnitPrice, v))
+}
+
+// MeterUnitPriceLT applies the LT predicate on the "meter_unit_price" field.
+func MeterUnitPriceLT(v float64) predicate.UsageLog {
+	return predicate.UsageLog(sql.FieldLT(FieldMeterUnitPrice, v))
+}
+
+// MeterUnitPriceLTE applies the LTE predicate on the "meter_unit_price" field.
+func MeterUnitPriceLTE(v float64) predicate.UsageLog {
+	return predicate.UsageLog(sql.FieldLTE(FieldMeterUnitPrice, v))
+}
+
+// MeterUnitPriceIsNil applies the IsNil predicate on the "meter_unit_price" field.
+func MeterUnitPriceIsNil() predicate.UsageLog {
+	return predicate.UsageLog(sql.FieldIsNull(FieldMeterUnitPrice))
+}
+
+// MeterUnitPriceNotNil applies the NotNil predicate on the "meter_unit_price" field.
+func MeterUnitPriceNotNil() predicate.UsageLog {
+	return predicate.UsageLog(sql.FieldNotNull(FieldMeterUnitPrice))
+}
+
+// MeterDetailIsNil applies the IsNil predicate on the "meter_detail" field.
+func MeterDetailIsNil() predicate.UsageLog {
+	return predicate.UsageLog(sql.FieldIsNull(FieldMeterDetail))
+}
+
+// MeterDetailNotNil applies the NotNil predicate on the "meter_detail" field.
+func MeterDetailNotNil() predicate.UsageLog {
+	return predicate.UsageLog(sql.FieldNotNull(FieldMeterDetail))
 }
 
 // RateMultiplierEQ applies the EQ predicate on the "rate_multiplier" field.

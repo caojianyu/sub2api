@@ -281,6 +281,20 @@ func (_c *UsageLogCreate) SetNillableOutputCost(v *float64) *UsageLogCreate {
 	return _c
 }
 
+// SetMeterCost sets the "meter_cost" field.
+func (_c *UsageLogCreate) SetMeterCost(v float64) *UsageLogCreate {
+	_c.mutation.SetMeterCost(v)
+	return _c
+}
+
+// SetNillableMeterCost sets the "meter_cost" field if the given value is not nil.
+func (_c *UsageLogCreate) SetNillableMeterCost(v *float64) *UsageLogCreate {
+	if v != nil {
+		_c.SetMeterCost(*v)
+	}
+	return _c
+}
+
 // SetCacheCreationCost sets the "cache_creation_cost" field.
 func (_c *UsageLogCreate) SetCacheCreationCost(v float64) *UsageLogCreate {
 	_c.mutation.SetCacheCreationCost(v)
@@ -334,6 +348,54 @@ func (_c *UsageLogCreate) SetNillableActualCost(v *float64) *UsageLogCreate {
 	if v != nil {
 		_c.SetActualCost(*v)
 	}
+	return _c
+}
+
+// SetMeterUnit sets the "meter_unit" field.
+func (_c *UsageLogCreate) SetMeterUnit(v string) *UsageLogCreate {
+	_c.mutation.SetMeterUnit(v)
+	return _c
+}
+
+// SetNillableMeterUnit sets the "meter_unit" field if the given value is not nil.
+func (_c *UsageLogCreate) SetNillableMeterUnit(v *string) *UsageLogCreate {
+	if v != nil {
+		_c.SetMeterUnit(*v)
+	}
+	return _c
+}
+
+// SetMeterQuantity sets the "meter_quantity" field.
+func (_c *UsageLogCreate) SetMeterQuantity(v float64) *UsageLogCreate {
+	_c.mutation.SetMeterQuantity(v)
+	return _c
+}
+
+// SetNillableMeterQuantity sets the "meter_quantity" field if the given value is not nil.
+func (_c *UsageLogCreate) SetNillableMeterQuantity(v *float64) *UsageLogCreate {
+	if v != nil {
+		_c.SetMeterQuantity(*v)
+	}
+	return _c
+}
+
+// SetMeterUnitPrice sets the "meter_unit_price" field.
+func (_c *UsageLogCreate) SetMeterUnitPrice(v float64) *UsageLogCreate {
+	_c.mutation.SetMeterUnitPrice(v)
+	return _c
+}
+
+// SetNillableMeterUnitPrice sets the "meter_unit_price" field if the given value is not nil.
+func (_c *UsageLogCreate) SetNillableMeterUnitPrice(v *float64) *UsageLogCreate {
+	if v != nil {
+		_c.SetMeterUnitPrice(*v)
+	}
+	return _c
+}
+
+// SetMeterDetail sets the "meter_detail" field.
+func (_c *UsageLogCreate) SetMeterDetail(v map[string]interface{}) *UsageLogCreate {
+	_c.mutation.SetMeterDetail(v)
 	return _c
 }
 
@@ -645,6 +707,10 @@ func (_c *UsageLogCreate) defaults() {
 		v := usagelog.DefaultOutputCost
 		_c.mutation.SetOutputCost(v)
 	}
+	if _, ok := _c.mutation.MeterCost(); !ok {
+		v := usagelog.DefaultMeterCost
+		_c.mutation.SetMeterCost(v)
+	}
 	if _, ok := _c.mutation.CacheCreationCost(); !ok {
 		v := usagelog.DefaultCacheCreationCost
 		_c.mutation.SetCacheCreationCost(v)
@@ -763,6 +829,9 @@ func (_c *UsageLogCreate) check() error {
 	if _, ok := _c.mutation.OutputCost(); !ok {
 		return &ValidationError{Name: "output_cost", err: errors.New(`ent: missing required field "UsageLog.output_cost"`)}
 	}
+	if _, ok := _c.mutation.MeterCost(); !ok {
+		return &ValidationError{Name: "meter_cost", err: errors.New(`ent: missing required field "UsageLog.meter_cost"`)}
+	}
 	if _, ok := _c.mutation.CacheCreationCost(); !ok {
 		return &ValidationError{Name: "cache_creation_cost", err: errors.New(`ent: missing required field "UsageLog.cache_creation_cost"`)}
 	}
@@ -774,6 +843,11 @@ func (_c *UsageLogCreate) check() error {
 	}
 	if _, ok := _c.mutation.ActualCost(); !ok {
 		return &ValidationError{Name: "actual_cost", err: errors.New(`ent: missing required field "UsageLog.actual_cost"`)}
+	}
+	if v, ok := _c.mutation.MeterUnit(); ok {
+		if err := usagelog.MeterUnitValidator(v); err != nil {
+			return &ValidationError{Name: "meter_unit", err: fmt.Errorf(`ent: validator failed for field "UsageLog.meter_unit": %w`, err)}
+		}
 	}
 	if _, ok := _c.mutation.RateMultiplier(); !ok {
 		return &ValidationError{Name: "rate_multiplier", err: errors.New(`ent: missing required field "UsageLog.rate_multiplier"`)}
@@ -923,6 +997,10 @@ func (_c *UsageLogCreate) createSpec() (*UsageLog, *sqlgraph.CreateSpec) {
 		_spec.SetField(usagelog.FieldOutputCost, field.TypeFloat64, value)
 		_node.OutputCost = value
 	}
+	if value, ok := _c.mutation.MeterCost(); ok {
+		_spec.SetField(usagelog.FieldMeterCost, field.TypeFloat64, value)
+		_node.MeterCost = value
+	}
 	if value, ok := _c.mutation.CacheCreationCost(); ok {
 		_spec.SetField(usagelog.FieldCacheCreationCost, field.TypeFloat64, value)
 		_node.CacheCreationCost = value
@@ -938,6 +1016,22 @@ func (_c *UsageLogCreate) createSpec() (*UsageLog, *sqlgraph.CreateSpec) {
 	if value, ok := _c.mutation.ActualCost(); ok {
 		_spec.SetField(usagelog.FieldActualCost, field.TypeFloat64, value)
 		_node.ActualCost = value
+	}
+	if value, ok := _c.mutation.MeterUnit(); ok {
+		_spec.SetField(usagelog.FieldMeterUnit, field.TypeString, value)
+		_node.MeterUnit = &value
+	}
+	if value, ok := _c.mutation.MeterQuantity(); ok {
+		_spec.SetField(usagelog.FieldMeterQuantity, field.TypeFloat64, value)
+		_node.MeterQuantity = &value
+	}
+	if value, ok := _c.mutation.MeterUnitPrice(); ok {
+		_spec.SetField(usagelog.FieldMeterUnitPrice, field.TypeFloat64, value)
+		_node.MeterUnitPrice = &value
+	}
+	if value, ok := _c.mutation.MeterDetail(); ok {
+		_spec.SetField(usagelog.FieldMeterDetail, field.TypeJSON, value)
+		_node.MeterDetail = value
 	}
 	if value, ok := _c.mutation.RateMultiplier(); ok {
 		_spec.SetField(usagelog.FieldRateMultiplier, field.TypeFloat64, value)
@@ -1494,6 +1588,24 @@ func (u *UsageLogUpsert) AddOutputCost(v float64) *UsageLogUpsert {
 	return u
 }
 
+// SetMeterCost sets the "meter_cost" field.
+func (u *UsageLogUpsert) SetMeterCost(v float64) *UsageLogUpsert {
+	u.Set(usagelog.FieldMeterCost, v)
+	return u
+}
+
+// UpdateMeterCost sets the "meter_cost" field to the value that was provided on create.
+func (u *UsageLogUpsert) UpdateMeterCost() *UsageLogUpsert {
+	u.SetExcluded(usagelog.FieldMeterCost)
+	return u
+}
+
+// AddMeterCost adds v to the "meter_cost" field.
+func (u *UsageLogUpsert) AddMeterCost(v float64) *UsageLogUpsert {
+	u.Add(usagelog.FieldMeterCost, v)
+	return u
+}
+
 // SetCacheCreationCost sets the "cache_creation_cost" field.
 func (u *UsageLogUpsert) SetCacheCreationCost(v float64) *UsageLogUpsert {
 	u.Set(usagelog.FieldCacheCreationCost, v)
@@ -1563,6 +1675,90 @@ func (u *UsageLogUpsert) UpdateActualCost() *UsageLogUpsert {
 // AddActualCost adds v to the "actual_cost" field.
 func (u *UsageLogUpsert) AddActualCost(v float64) *UsageLogUpsert {
 	u.Add(usagelog.FieldActualCost, v)
+	return u
+}
+
+// SetMeterUnit sets the "meter_unit" field.
+func (u *UsageLogUpsert) SetMeterUnit(v string) *UsageLogUpsert {
+	u.Set(usagelog.FieldMeterUnit, v)
+	return u
+}
+
+// UpdateMeterUnit sets the "meter_unit" field to the value that was provided on create.
+func (u *UsageLogUpsert) UpdateMeterUnit() *UsageLogUpsert {
+	u.SetExcluded(usagelog.FieldMeterUnit)
+	return u
+}
+
+// ClearMeterUnit clears the value of the "meter_unit" field.
+func (u *UsageLogUpsert) ClearMeterUnit() *UsageLogUpsert {
+	u.SetNull(usagelog.FieldMeterUnit)
+	return u
+}
+
+// SetMeterQuantity sets the "meter_quantity" field.
+func (u *UsageLogUpsert) SetMeterQuantity(v float64) *UsageLogUpsert {
+	u.Set(usagelog.FieldMeterQuantity, v)
+	return u
+}
+
+// UpdateMeterQuantity sets the "meter_quantity" field to the value that was provided on create.
+func (u *UsageLogUpsert) UpdateMeterQuantity() *UsageLogUpsert {
+	u.SetExcluded(usagelog.FieldMeterQuantity)
+	return u
+}
+
+// AddMeterQuantity adds v to the "meter_quantity" field.
+func (u *UsageLogUpsert) AddMeterQuantity(v float64) *UsageLogUpsert {
+	u.Add(usagelog.FieldMeterQuantity, v)
+	return u
+}
+
+// ClearMeterQuantity clears the value of the "meter_quantity" field.
+func (u *UsageLogUpsert) ClearMeterQuantity() *UsageLogUpsert {
+	u.SetNull(usagelog.FieldMeterQuantity)
+	return u
+}
+
+// SetMeterUnitPrice sets the "meter_unit_price" field.
+func (u *UsageLogUpsert) SetMeterUnitPrice(v float64) *UsageLogUpsert {
+	u.Set(usagelog.FieldMeterUnitPrice, v)
+	return u
+}
+
+// UpdateMeterUnitPrice sets the "meter_unit_price" field to the value that was provided on create.
+func (u *UsageLogUpsert) UpdateMeterUnitPrice() *UsageLogUpsert {
+	u.SetExcluded(usagelog.FieldMeterUnitPrice)
+	return u
+}
+
+// AddMeterUnitPrice adds v to the "meter_unit_price" field.
+func (u *UsageLogUpsert) AddMeterUnitPrice(v float64) *UsageLogUpsert {
+	u.Add(usagelog.FieldMeterUnitPrice, v)
+	return u
+}
+
+// ClearMeterUnitPrice clears the value of the "meter_unit_price" field.
+func (u *UsageLogUpsert) ClearMeterUnitPrice() *UsageLogUpsert {
+	u.SetNull(usagelog.FieldMeterUnitPrice)
+	return u
+}
+
+// SetMeterDetail sets the "meter_detail" field.
+func (u *UsageLogUpsert) SetMeterDetail(v map[string]interface{}) *UsageLogUpsert {
+	u.Set(usagelog.FieldMeterDetail, v)
+	return u
+}
+
+// UpdateMeterDetail sets the "meter_detail" field to the value that was provided on create.
+func (u *UsageLogUpsert) UpdateMeterDetail() *UsageLogUpsert {
+	u.SetExcluded(usagelog.FieldMeterDetail)
+	return u
+}
+
+// ClearMeterDetail clears the value of the "meter_detail" field.
+func (u *UsageLogUpsert) ClearMeterDetail() *UsageLogUpsert {
+	u.SetNull(usagelog.FieldMeterDetail)
 	return u
 }
 
@@ -2300,6 +2496,27 @@ func (u *UsageLogUpsertOne) UpdateOutputCost() *UsageLogUpsertOne {
 	})
 }
 
+// SetMeterCost sets the "meter_cost" field.
+func (u *UsageLogUpsertOne) SetMeterCost(v float64) *UsageLogUpsertOne {
+	return u.Update(func(s *UsageLogUpsert) {
+		s.SetMeterCost(v)
+	})
+}
+
+// AddMeterCost adds v to the "meter_cost" field.
+func (u *UsageLogUpsertOne) AddMeterCost(v float64) *UsageLogUpsertOne {
+	return u.Update(func(s *UsageLogUpsert) {
+		s.AddMeterCost(v)
+	})
+}
+
+// UpdateMeterCost sets the "meter_cost" field to the value that was provided on create.
+func (u *UsageLogUpsertOne) UpdateMeterCost() *UsageLogUpsertOne {
+	return u.Update(func(s *UsageLogUpsert) {
+		s.UpdateMeterCost()
+	})
+}
+
 // SetCacheCreationCost sets the "cache_creation_cost" field.
 func (u *UsageLogUpsertOne) SetCacheCreationCost(v float64) *UsageLogUpsertOne {
 	return u.Update(func(s *UsageLogUpsert) {
@@ -2381,6 +2598,104 @@ func (u *UsageLogUpsertOne) AddActualCost(v float64) *UsageLogUpsertOne {
 func (u *UsageLogUpsertOne) UpdateActualCost() *UsageLogUpsertOne {
 	return u.Update(func(s *UsageLogUpsert) {
 		s.UpdateActualCost()
+	})
+}
+
+// SetMeterUnit sets the "meter_unit" field.
+func (u *UsageLogUpsertOne) SetMeterUnit(v string) *UsageLogUpsertOne {
+	return u.Update(func(s *UsageLogUpsert) {
+		s.SetMeterUnit(v)
+	})
+}
+
+// UpdateMeterUnit sets the "meter_unit" field to the value that was provided on create.
+func (u *UsageLogUpsertOne) UpdateMeterUnit() *UsageLogUpsertOne {
+	return u.Update(func(s *UsageLogUpsert) {
+		s.UpdateMeterUnit()
+	})
+}
+
+// ClearMeterUnit clears the value of the "meter_unit" field.
+func (u *UsageLogUpsertOne) ClearMeterUnit() *UsageLogUpsertOne {
+	return u.Update(func(s *UsageLogUpsert) {
+		s.ClearMeterUnit()
+	})
+}
+
+// SetMeterQuantity sets the "meter_quantity" field.
+func (u *UsageLogUpsertOne) SetMeterQuantity(v float64) *UsageLogUpsertOne {
+	return u.Update(func(s *UsageLogUpsert) {
+		s.SetMeterQuantity(v)
+	})
+}
+
+// AddMeterQuantity adds v to the "meter_quantity" field.
+func (u *UsageLogUpsertOne) AddMeterQuantity(v float64) *UsageLogUpsertOne {
+	return u.Update(func(s *UsageLogUpsert) {
+		s.AddMeterQuantity(v)
+	})
+}
+
+// UpdateMeterQuantity sets the "meter_quantity" field to the value that was provided on create.
+func (u *UsageLogUpsertOne) UpdateMeterQuantity() *UsageLogUpsertOne {
+	return u.Update(func(s *UsageLogUpsert) {
+		s.UpdateMeterQuantity()
+	})
+}
+
+// ClearMeterQuantity clears the value of the "meter_quantity" field.
+func (u *UsageLogUpsertOne) ClearMeterQuantity() *UsageLogUpsertOne {
+	return u.Update(func(s *UsageLogUpsert) {
+		s.ClearMeterQuantity()
+	})
+}
+
+// SetMeterUnitPrice sets the "meter_unit_price" field.
+func (u *UsageLogUpsertOne) SetMeterUnitPrice(v float64) *UsageLogUpsertOne {
+	return u.Update(func(s *UsageLogUpsert) {
+		s.SetMeterUnitPrice(v)
+	})
+}
+
+// AddMeterUnitPrice adds v to the "meter_unit_price" field.
+func (u *UsageLogUpsertOne) AddMeterUnitPrice(v float64) *UsageLogUpsertOne {
+	return u.Update(func(s *UsageLogUpsert) {
+		s.AddMeterUnitPrice(v)
+	})
+}
+
+// UpdateMeterUnitPrice sets the "meter_unit_price" field to the value that was provided on create.
+func (u *UsageLogUpsertOne) UpdateMeterUnitPrice() *UsageLogUpsertOne {
+	return u.Update(func(s *UsageLogUpsert) {
+		s.UpdateMeterUnitPrice()
+	})
+}
+
+// ClearMeterUnitPrice clears the value of the "meter_unit_price" field.
+func (u *UsageLogUpsertOne) ClearMeterUnitPrice() *UsageLogUpsertOne {
+	return u.Update(func(s *UsageLogUpsert) {
+		s.ClearMeterUnitPrice()
+	})
+}
+
+// SetMeterDetail sets the "meter_detail" field.
+func (u *UsageLogUpsertOne) SetMeterDetail(v map[string]interface{}) *UsageLogUpsertOne {
+	return u.Update(func(s *UsageLogUpsert) {
+		s.SetMeterDetail(v)
+	})
+}
+
+// UpdateMeterDetail sets the "meter_detail" field to the value that was provided on create.
+func (u *UsageLogUpsertOne) UpdateMeterDetail() *UsageLogUpsertOne {
+	return u.Update(func(s *UsageLogUpsert) {
+		s.UpdateMeterDetail()
+	})
+}
+
+// ClearMeterDetail clears the value of the "meter_detail" field.
+func (u *UsageLogUpsertOne) ClearMeterDetail() *UsageLogUpsertOne {
+	return u.Update(func(s *UsageLogUpsert) {
+		s.ClearMeterDetail()
 	})
 }
 
@@ -3330,6 +3645,27 @@ func (u *UsageLogUpsertBulk) UpdateOutputCost() *UsageLogUpsertBulk {
 	})
 }
 
+// SetMeterCost sets the "meter_cost" field.
+func (u *UsageLogUpsertBulk) SetMeterCost(v float64) *UsageLogUpsertBulk {
+	return u.Update(func(s *UsageLogUpsert) {
+		s.SetMeterCost(v)
+	})
+}
+
+// AddMeterCost adds v to the "meter_cost" field.
+func (u *UsageLogUpsertBulk) AddMeterCost(v float64) *UsageLogUpsertBulk {
+	return u.Update(func(s *UsageLogUpsert) {
+		s.AddMeterCost(v)
+	})
+}
+
+// UpdateMeterCost sets the "meter_cost" field to the value that was provided on create.
+func (u *UsageLogUpsertBulk) UpdateMeterCost() *UsageLogUpsertBulk {
+	return u.Update(func(s *UsageLogUpsert) {
+		s.UpdateMeterCost()
+	})
+}
+
 // SetCacheCreationCost sets the "cache_creation_cost" field.
 func (u *UsageLogUpsertBulk) SetCacheCreationCost(v float64) *UsageLogUpsertBulk {
 	return u.Update(func(s *UsageLogUpsert) {
@@ -3411,6 +3747,104 @@ func (u *UsageLogUpsertBulk) AddActualCost(v float64) *UsageLogUpsertBulk {
 func (u *UsageLogUpsertBulk) UpdateActualCost() *UsageLogUpsertBulk {
 	return u.Update(func(s *UsageLogUpsert) {
 		s.UpdateActualCost()
+	})
+}
+
+// SetMeterUnit sets the "meter_unit" field.
+func (u *UsageLogUpsertBulk) SetMeterUnit(v string) *UsageLogUpsertBulk {
+	return u.Update(func(s *UsageLogUpsert) {
+		s.SetMeterUnit(v)
+	})
+}
+
+// UpdateMeterUnit sets the "meter_unit" field to the value that was provided on create.
+func (u *UsageLogUpsertBulk) UpdateMeterUnit() *UsageLogUpsertBulk {
+	return u.Update(func(s *UsageLogUpsert) {
+		s.UpdateMeterUnit()
+	})
+}
+
+// ClearMeterUnit clears the value of the "meter_unit" field.
+func (u *UsageLogUpsertBulk) ClearMeterUnit() *UsageLogUpsertBulk {
+	return u.Update(func(s *UsageLogUpsert) {
+		s.ClearMeterUnit()
+	})
+}
+
+// SetMeterQuantity sets the "meter_quantity" field.
+func (u *UsageLogUpsertBulk) SetMeterQuantity(v float64) *UsageLogUpsertBulk {
+	return u.Update(func(s *UsageLogUpsert) {
+		s.SetMeterQuantity(v)
+	})
+}
+
+// AddMeterQuantity adds v to the "meter_quantity" field.
+func (u *UsageLogUpsertBulk) AddMeterQuantity(v float64) *UsageLogUpsertBulk {
+	return u.Update(func(s *UsageLogUpsert) {
+		s.AddMeterQuantity(v)
+	})
+}
+
+// UpdateMeterQuantity sets the "meter_quantity" field to the value that was provided on create.
+func (u *UsageLogUpsertBulk) UpdateMeterQuantity() *UsageLogUpsertBulk {
+	return u.Update(func(s *UsageLogUpsert) {
+		s.UpdateMeterQuantity()
+	})
+}
+
+// ClearMeterQuantity clears the value of the "meter_quantity" field.
+func (u *UsageLogUpsertBulk) ClearMeterQuantity() *UsageLogUpsertBulk {
+	return u.Update(func(s *UsageLogUpsert) {
+		s.ClearMeterQuantity()
+	})
+}
+
+// SetMeterUnitPrice sets the "meter_unit_price" field.
+func (u *UsageLogUpsertBulk) SetMeterUnitPrice(v float64) *UsageLogUpsertBulk {
+	return u.Update(func(s *UsageLogUpsert) {
+		s.SetMeterUnitPrice(v)
+	})
+}
+
+// AddMeterUnitPrice adds v to the "meter_unit_price" field.
+func (u *UsageLogUpsertBulk) AddMeterUnitPrice(v float64) *UsageLogUpsertBulk {
+	return u.Update(func(s *UsageLogUpsert) {
+		s.AddMeterUnitPrice(v)
+	})
+}
+
+// UpdateMeterUnitPrice sets the "meter_unit_price" field to the value that was provided on create.
+func (u *UsageLogUpsertBulk) UpdateMeterUnitPrice() *UsageLogUpsertBulk {
+	return u.Update(func(s *UsageLogUpsert) {
+		s.UpdateMeterUnitPrice()
+	})
+}
+
+// ClearMeterUnitPrice clears the value of the "meter_unit_price" field.
+func (u *UsageLogUpsertBulk) ClearMeterUnitPrice() *UsageLogUpsertBulk {
+	return u.Update(func(s *UsageLogUpsert) {
+		s.ClearMeterUnitPrice()
+	})
+}
+
+// SetMeterDetail sets the "meter_detail" field.
+func (u *UsageLogUpsertBulk) SetMeterDetail(v map[string]interface{}) *UsageLogUpsertBulk {
+	return u.Update(func(s *UsageLogUpsert) {
+		s.SetMeterDetail(v)
+	})
+}
+
+// UpdateMeterDetail sets the "meter_detail" field to the value that was provided on create.
+func (u *UsageLogUpsertBulk) UpdateMeterDetail() *UsageLogUpsertBulk {
+	return u.Update(func(s *UsageLogUpsert) {
+		s.UpdateMeterDetail()
+	})
+}
+
+// ClearMeterDetail clears the value of the "meter_detail" field.
+func (u *UsageLogUpsertBulk) ClearMeterDetail() *UsageLogUpsertBulk {
+	return u.Update(func(s *UsageLogUpsert) {
+		s.ClearMeterDetail()
 	})
 }
 

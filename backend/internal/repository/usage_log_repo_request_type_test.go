@@ -6,6 +6,7 @@ import (
 	"database/sql/driver"
 	"fmt"
 	"reflect"
+	"strings"
 	"testing"
 	"time"
 
@@ -40,58 +41,7 @@ func TestUsageLogRepositoryCreateSyncRequestTypeAndLegacyFields(t *testing.T) {
 	}
 
 	mock.ExpectQuery("INSERT INTO usage_logs").
-		WithArgs(
-			log.UserID,
-			log.APIKeyID,
-			log.AccountID,
-			log.RequestID,
-			log.Model,
-			log.RequestedModel,
-			sqlmock.AnyArg(), // upstream_model
-			sqlmock.AnyArg(), // group_id
-			sqlmock.AnyArg(), // subscription_id
-			log.InputTokens,
-			log.OutputTokens,
-			log.CacheCreationTokens,
-			log.CacheReadTokens,
-			log.CacheCreation5mTokens,
-			log.CacheCreation1hTokens,
-			log.ImageOutputTokens,
-			log.ImageOutputCost,
-			log.InputCost,
-			log.OutputCost,
-			log.CacheCreationCost,
-			log.CacheReadCost,
-			log.TotalCost,
-			log.ActualCost,
-			log.RateMultiplier,
-			log.AccountRateMultiplier,
-			log.BillingType,
-			int16(service.RequestTypeWSV2),
-			true,
-			true,
-			sqlmock.AnyArg(), // duration_ms
-			sqlmock.AnyArg(), // first_token_ms
-			sqlmock.AnyArg(), // user_agent
-			sqlmock.AnyArg(), // ip_address
-			log.ImageCount,
-			sqlmock.AnyArg(), // image_size
-			sqlmock.AnyArg(), // image_input_size
-			sqlmock.AnyArg(), // image_output_size
-			sqlmock.AnyArg(), // image_size_source
-			sqlmock.AnyArg(), // image_size_breakdown
-			sqlmock.AnyArg(), // service_tier
-			sqlmock.AnyArg(), // reasoning_effort
-			sqlmock.AnyArg(), // inbound_endpoint
-			sqlmock.AnyArg(), // upstream_endpoint
-			log.CacheTTLOverridden,
-			sqlmock.AnyArg(), // channel_id
-			sqlmock.AnyArg(), // model_mapping_chain
-			sqlmock.AnyArg(), // billing_tier
-			sqlmock.AnyArg(), // billing_mode
-			sqlmock.AnyArg(), // account_stats_cost
-			createdAt,
-		).
+		WithArgs(expectedUsageLogInsertArgs(log)...).
 		WillReturnRows(sqlmock.NewRows([]string{"id", "created_at"}).AddRow(int64(99), createdAt))
 
 	inserted, err := repo.Create(context.Background(), log)
@@ -123,58 +73,7 @@ func TestUsageLogRepositoryCreate_PersistsServiceTier(t *testing.T) {
 	}
 
 	mock.ExpectQuery("INSERT INTO usage_logs").
-		WithArgs(
-			log.UserID,
-			log.APIKeyID,
-			log.AccountID,
-			log.RequestID,
-			log.Model,
-			log.RequestedModel,
-			sqlmock.AnyArg(),
-			sqlmock.AnyArg(),
-			sqlmock.AnyArg(),
-			log.InputTokens,
-			log.OutputTokens,
-			log.CacheCreationTokens,
-			log.CacheReadTokens,
-			log.CacheCreation5mTokens,
-			log.CacheCreation1hTokens,
-			log.ImageOutputTokens,
-			log.ImageOutputCost,
-			log.InputCost,
-			log.OutputCost,
-			log.CacheCreationCost,
-			log.CacheReadCost,
-			log.TotalCost,
-			log.ActualCost,
-			log.RateMultiplier,
-			log.AccountRateMultiplier,
-			log.BillingType,
-			int16(service.RequestTypeSync),
-			false,
-			false,
-			sqlmock.AnyArg(),
-			sqlmock.AnyArg(),
-			sqlmock.AnyArg(),
-			sqlmock.AnyArg(),
-			log.ImageCount,
-			sqlmock.AnyArg(),
-			sqlmock.AnyArg(), // image_input_size
-			sqlmock.AnyArg(), // image_output_size
-			sqlmock.AnyArg(), // image_size_source
-			sqlmock.AnyArg(), // image_size_breakdown
-			serviceTier,
-			sqlmock.AnyArg(),
-			sqlmock.AnyArg(),
-			sqlmock.AnyArg(),
-			log.CacheTTLOverridden,
-			sqlmock.AnyArg(), // channel_id
-			sqlmock.AnyArg(), // model_mapping_chain
-			sqlmock.AnyArg(), // billing_tier
-			sqlmock.AnyArg(), // billing_mode
-			sqlmock.AnyArg(), // account_stats_cost
-			createdAt,
-		).
+		WithArgs(expectedUsageLogInsertArgs(log)...).
 		WillReturnRows(sqlmock.NewRows([]string{"id", "created_at"}).AddRow(int64(100), createdAt))
 
 	inserted, err := repo.Create(context.Background(), log)
@@ -259,11 +158,11 @@ func TestPrepareUsageLogInsert_PersistsImageSizeMetadata(t *testing.T) {
 		CreatedAt:          time.Date(2025, 1, 6, 12, 0, 0, 0, time.UTC),
 	})
 
-	require.Equal(t, sql.NullString{String: imageSize, Valid: true}, prepared.args[34])
-	require.Equal(t, sql.NullString{String: inputSize, Valid: true}, prepared.args[35])
-	require.Equal(t, sql.NullString{String: outputSize, Valid: true}, prepared.args[36])
-	require.Equal(t, sql.NullString{String: source, Valid: true}, prepared.args[37])
-	breakdownJSON, ok := prepared.args[38].(string)
+	require.Equal(t, sql.NullString{String: imageSize, Valid: true}, prepared.args[usageLogInsertArgIndex(t, "image_size")])
+	require.Equal(t, sql.NullString{String: inputSize, Valid: true}, prepared.args[usageLogInsertArgIndex(t, "image_input_size")])
+	require.Equal(t, sql.NullString{String: outputSize, Valid: true}, prepared.args[usageLogInsertArgIndex(t, "image_output_size")])
+	require.Equal(t, sql.NullString{String: source, Valid: true}, prepared.args[usageLogInsertArgIndex(t, "image_size_source")])
+	breakdownJSON, ok := prepared.args[usageLogInsertArgIndex(t, "image_size_breakdown")].(string)
 	require.True(t, ok)
 	require.JSONEq(t, `{"1K":1,"4K":1}`, breakdownJSON)
 }
@@ -326,6 +225,106 @@ func anySliceToDriverValues(values []any) []driver.Value {
 		out = append(out, value)
 	}
 	return out
+}
+
+func expectedUsageLogInsertArgs(log *service.UsageLog) []driver.Value {
+	cloned := *log
+	return anySliceToDriverValues(prepareUsageLogInsert(&cloned).args)
+}
+
+func usageLogSelectColumnNames() []string {
+	parts := strings.Split(usageLogSelectColumns, ",")
+	columns := make([]string, 0, len(parts))
+	for _, part := range parts {
+		columns = append(columns, strings.TrimSpace(part))
+	}
+	return columns
+}
+
+func usageLogInsertArgIndex(t *testing.T, column string) int {
+	t.Helper()
+	for idx, name := range usageLogSelectColumnNames()[1:] {
+		if name == column {
+			return idx
+		}
+	}
+	t.Fatalf("usage log insert column %q not found", column)
+	return -1
+}
+
+func usageLogScanValues(t *testing.T, overrides map[string]any) []any {
+	t.Helper()
+	defaults := map[string]any{
+		"id":                       int64(1),
+		"user_id":                  int64(10),
+		"api_key_id":               int64(20),
+		"account_id":               int64(30),
+		"request_id":               sql.NullString{Valid: true, String: "req-1"},
+		"model":                    "gpt-5",
+		"requested_model":          sql.NullString{Valid: true, String: "gpt-5"},
+		"upstream_model":           sql.NullString{},
+		"group_id":                 sql.NullInt64{},
+		"subscription_id":          sql.NullInt64{},
+		"input_tokens":             0,
+		"output_tokens":            0,
+		"cache_creation_tokens":    0,
+		"cache_read_tokens":        0,
+		"cache_creation_5m_tokens": 0,
+		"cache_creation_1h_tokens": 0,
+		"image_output_tokens":      0,
+		"image_output_cost":        0.0,
+		"input_cost":               0.0,
+		"output_cost":              0.0,
+		"meter_cost":               0.0,
+		"cache_creation_cost":      0.0,
+		"cache_read_cost":          0.0,
+		"total_cost":               0.0,
+		"actual_cost":              0.0,
+		"rate_multiplier":          1.0,
+		"account_rate_multiplier":  sql.NullFloat64{},
+		"billing_type":             int16(service.BillingTypeBalance),
+		"request_type":             int16(service.RequestTypeSync),
+		"stream":                   false,
+		"openai_ws_mode":           false,
+		"duration_ms":              sql.NullInt64{},
+		"first_token_ms":           sql.NullInt64{},
+		"user_agent":               sql.NullString{},
+		"ip_address":               sql.NullString{},
+		"image_count":              0,
+		"image_size":               sql.NullString{},
+		"image_input_size":         sql.NullString{},
+		"image_output_size":        sql.NullString{},
+		"image_size_source":        sql.NullString{},
+		"image_size_breakdown":     sql.NullString{},
+		"service_tier":             sql.NullString{},
+		"reasoning_effort":         sql.NullString{},
+		"inbound_endpoint":         sql.NullString{},
+		"upstream_endpoint":        sql.NullString{},
+		"cache_ttl_overridden":     false,
+		"channel_id":               sql.NullInt64{},
+		"model_mapping_chain":      sql.NullString{},
+		"billing_tier":             sql.NullString{},
+		"billing_mode":             sql.NullString{},
+		"meter_unit":               sql.NullString{},
+		"meter_quantity":           sql.NullFloat64{},
+		"meter_unit_price":         sql.NullFloat64{},
+		"meter_detail":             sql.NullString{},
+		"account_stats_cost":       sql.NullFloat64{},
+		"created_at":               time.Date(2025, 1, 1, 0, 0, 0, 0, time.UTC),
+	}
+	columns := usageLogSelectColumnNames()
+	values := make([]any, 0, len(columns))
+	for _, column := range columns {
+		value, ok := overrides[column]
+		if !ok {
+			value, ok = defaults[column]
+		}
+		if !ok {
+			t.Fatalf("missing default usage log scan value for column %q", column)
+		}
+		values = append(values, value)
+	}
+	return values
 }
 
 func TestUsageLogRepositoryListWithFiltersRequestTypePriority(t *testing.T) {
@@ -764,48 +763,24 @@ func (s usageLogScannerStub) Scan(dest ...any) error {
 func TestScanUsageLogRequestTypeAndLegacyFallback(t *testing.T) {
 	t.Run("image_size_metadata_is_scanned", func(t *testing.T) {
 		now := time.Now().UTC()
-		log, err := scanUsageLog(usageLogScannerStub{values: []any{
-			int64(4),
-			int64(13),
-			int64(23),
-			int64(33),
-			sql.NullString{Valid: true, String: "req-image-metadata"},
-			"gpt-image-2",
-			sql.NullString{Valid: true, String: "gpt-image-2"},
-			sql.NullString{},
-			sql.NullInt64{},
-			sql.NullInt64{},
-			0, 0, 0, 0, 0, 0,
-			0, 0.0, // image_output_tokens, image_output_cost
-			0.0, 0.0, 0.0, 0.0, 0.8, 0.8,
-			1.0,
-			sql.NullFloat64{},
-			int16(service.BillingTypeBalance),
-			int16(service.RequestTypeSync),
-			false,
-			false,
-			sql.NullInt64{},
-			sql.NullInt64{},
-			sql.NullString{},
-			sql.NullString{},
-			2,
-			sql.NullString{Valid: true, String: "4K"},
-			sql.NullString{Valid: true, String: "1024x1024"},
-			sql.NullString{Valid: true, String: "3840x2160"},
-			sql.NullString{Valid: true, String: "output"},
-			sql.NullString{Valid: true, String: `{"4K":2}`},
-			sql.NullString{},
-			sql.NullString{},
-			sql.NullString{},
-			sql.NullString{},
-			false,
-			sql.NullInt64{},
-			sql.NullString{},
-			sql.NullString{},
-			sql.NullString{},
-			sql.NullFloat64{},
-			now,
-		}})
+		log, err := scanUsageLog(usageLogScannerStub{values: usageLogScanValues(t, map[string]any{
+			"id":                   int64(4),
+			"user_id":              int64(13),
+			"api_key_id":           int64(23),
+			"account_id":           int64(33),
+			"request_id":           sql.NullString{Valid: true, String: "req-image-metadata"},
+			"model":                "gpt-image-2",
+			"requested_model":      sql.NullString{Valid: true, String: "gpt-image-2"},
+			"total_cost":           0.8,
+			"actual_cost":          0.8,
+			"image_count":          2,
+			"image_size":           sql.NullString{Valid: true, String: "4K"},
+			"image_input_size":     sql.NullString{Valid: true, String: "1024x1024"},
+			"image_output_size":    sql.NullString{Valid: true, String: "3840x2160"},
+			"image_size_source":    sql.NullString{Valid: true, String: "output"},
+			"image_size_breakdown": sql.NullString{Valid: true, String: `{"4K":2}`},
+			"created_at":           now,
+		})})
 		require.NoError(t, err)
 		require.Equal(t, 2, log.ImageCount)
 		require.NotNil(t, log.ImageSize)
@@ -821,59 +796,25 @@ func TestScanUsageLogRequestTypeAndLegacyFallback(t *testing.T) {
 
 	t.Run("request_type_ws_v2_overrides_legacy", func(t *testing.T) {
 		now := time.Now().UTC()
-		log, err := scanUsageLog(usageLogScannerStub{values: []any{
-			int64(1),  // id
-			int64(10), // user_id
-			int64(20), // api_key_id
-			int64(30), // account_id
-			sql.NullString{Valid: true, String: "req-1"},
-			"gpt-5", // model
-			sql.NullString{Valid: true, String: "gpt-5"}, // requested_model
-			sql.NullString{},  // upstream_model
-			sql.NullInt64{},   // group_id
-			sql.NullInt64{},   // subscription_id
-			1,                 // input_tokens
-			2,                 // output_tokens
-			3,                 // cache_creation_tokens
-			4,                 // cache_read_tokens
-			5,                 // cache_creation_5m_tokens
-			6,                 // cache_creation_1h_tokens
-			0,                 // image_output_tokens
-			0.0,               // image_output_cost
-			0.1,               // input_cost
-			0.2,               // output_cost
-			0.3,               // cache_creation_cost
-			0.4,               // cache_read_cost
-			1.0,               // total_cost
-			0.9,               // actual_cost
-			1.0,               // rate_multiplier
-			sql.NullFloat64{}, // account_rate_multiplier
-			int16(service.BillingTypeBalance),
-			int16(service.RequestTypeWSV2),
-			false, // legacy stream
-			false, // legacy openai ws
-			sql.NullInt64{},
-			sql.NullInt64{},
-			sql.NullString{},
-			sql.NullString{},
-			0,
-			sql.NullString{},
-			sql.NullString{}, // image_input_size
-			sql.NullString{}, // image_output_size
-			sql.NullString{}, // image_size_source
-			sql.NullString{}, // image_size_breakdown
-			sql.NullString{Valid: true, String: "priority"},
-			sql.NullString{},
-			sql.NullString{},
-			sql.NullString{},
-			false,
-			sql.NullInt64{},   // channel_id
-			sql.NullString{},  // model_mapping_chain
-			sql.NullString{},  // billing_tier
-			sql.NullString{},  // billing_mode
-			sql.NullFloat64{}, // account_stats_cost
-			now,
-		}})
+		log, err := scanUsageLog(usageLogScannerStub{values: usageLogScanValues(t, map[string]any{
+			"input_tokens":             1,
+			"output_tokens":            2,
+			"cache_creation_tokens":    3,
+			"cache_read_tokens":        4,
+			"cache_creation_5m_tokens": 5,
+			"cache_creation_1h_tokens": 6,
+			"input_cost":               0.1,
+			"output_cost":              0.2,
+			"cache_creation_cost":      0.3,
+			"cache_read_cost":          0.4,
+			"total_cost":               1.0,
+			"actual_cost":              0.9,
+			"request_type":             int16(service.RequestTypeWSV2),
+			"stream":                   false,
+			"openai_ws_mode":           false,
+			"service_tier":             sql.NullString{Valid: true, String: "priority"},
+			"created_at":               now,
+		})})
 		require.NoError(t, err)
 		require.NotNil(t, log.ServiceTier)
 		require.Equal(t, "priority", *log.ServiceTier)
@@ -884,48 +825,29 @@ func TestScanUsageLogRequestTypeAndLegacyFallback(t *testing.T) {
 
 	t.Run("request_type_unknown_falls_back_to_legacy", func(t *testing.T) {
 		now := time.Now().UTC()
-		log, err := scanUsageLog(usageLogScannerStub{values: []any{
-			int64(2),
-			int64(11),
-			int64(21),
-			int64(31),
-			sql.NullString{Valid: true, String: "req-2"},
-			"gpt-5",
-			sql.NullString{Valid: true, String: "gpt-5"},
-			sql.NullString{},
-			sql.NullInt64{},
-			sql.NullInt64{},
-			1, 2, 3, 4, 5, 6,
-			0, 0.0, // image_output_tokens, image_output_cost
-			0.1, 0.2, 0.3, 0.4, 1.0, 0.9,
-			1.0,
-			sql.NullFloat64{},
-			int16(service.BillingTypeBalance),
-			int16(service.RequestTypeUnknown),
-			true,
-			false,
-			sql.NullInt64{},
-			sql.NullInt64{},
-			sql.NullString{},
-			sql.NullString{},
-			0,
-			sql.NullString{},
-			sql.NullString{}, // image_input_size
-			sql.NullString{}, // image_output_size
-			sql.NullString{}, // image_size_source
-			sql.NullString{}, // image_size_breakdown
-			sql.NullString{Valid: true, String: "flex"},
-			sql.NullString{},
-			sql.NullString{},
-			sql.NullString{},
-			false,
-			sql.NullInt64{},   // channel_id
-			sql.NullString{},  // model_mapping_chain
-			sql.NullString{},  // billing_tier
-			sql.NullString{},  // billing_mode
-			sql.NullFloat64{}, // account_stats_cost
-			now,
-		}})
+		log, err := scanUsageLog(usageLogScannerStub{values: usageLogScanValues(t, map[string]any{
+			"id":                       int64(2),
+			"user_id":                  int64(11),
+			"api_key_id":               int64(21),
+			"account_id":               int64(31),
+			"request_id":               sql.NullString{Valid: true, String: "req-2"},
+			"input_tokens":             1,
+			"output_tokens":            2,
+			"cache_creation_tokens":    3,
+			"cache_read_tokens":        4,
+			"cache_creation_5m_tokens": 5,
+			"cache_creation_1h_tokens": 6,
+			"input_cost":               0.1,
+			"output_cost":              0.2,
+			"cache_creation_cost":      0.3,
+			"cache_read_cost":          0.4,
+			"total_cost":               1.0,
+			"actual_cost":              0.9,
+			"request_type":             int16(service.RequestTypeUnknown),
+			"stream":                   true,
+			"service_tier":             sql.NullString{Valid: true, String: "flex"},
+			"created_at":               now,
+		})})
 		require.NoError(t, err)
 		require.NotNil(t, log.ServiceTier)
 		require.Equal(t, "flex", *log.ServiceTier)
@@ -936,48 +858,29 @@ func TestScanUsageLogRequestTypeAndLegacyFallback(t *testing.T) {
 
 	t.Run("service_tier_is_scanned", func(t *testing.T) {
 		now := time.Now().UTC()
-		log, err := scanUsageLog(usageLogScannerStub{values: []any{
-			int64(3),
-			int64(12),
-			int64(22),
-			int64(32),
-			sql.NullString{Valid: true, String: "req-3"},
-			"gpt-5.4",
-			sql.NullString{Valid: true, String: "gpt-5.4"},
-			sql.NullString{},
-			sql.NullInt64{},
-			sql.NullInt64{},
-			1, 2, 3, 4, 5, 6,
-			0, 0.0, // image_output_tokens, image_output_cost
-			0.1, 0.2, 0.3, 0.4, 1.0, 0.9,
-			1.0,
-			sql.NullFloat64{},
-			int16(service.BillingTypeBalance),
-			int16(service.RequestTypeSync),
-			false,
-			false,
-			sql.NullInt64{},
-			sql.NullInt64{},
-			sql.NullString{},
-			sql.NullString{},
-			0,
-			sql.NullString{},
-			sql.NullString{}, // image_input_size
-			sql.NullString{}, // image_output_size
-			sql.NullString{}, // image_size_source
-			sql.NullString{}, // image_size_breakdown
-			sql.NullString{Valid: true, String: "priority"},
-			sql.NullString{},
-			sql.NullString{},
-			sql.NullString{},
-			false,
-			sql.NullInt64{},   // channel_id
-			sql.NullString{},  // model_mapping_chain
-			sql.NullString{},  // billing_tier
-			sql.NullString{},  // billing_mode
-			sql.NullFloat64{}, // account_stats_cost
-			now,
-		}})
+		log, err := scanUsageLog(usageLogScannerStub{values: usageLogScanValues(t, map[string]any{
+			"id":                       int64(3),
+			"user_id":                  int64(12),
+			"api_key_id":               int64(22),
+			"account_id":               int64(32),
+			"request_id":               sql.NullString{Valid: true, String: "req-3"},
+			"model":                    "gpt-5.4",
+			"requested_model":          sql.NullString{Valid: true, String: "gpt-5.4"},
+			"input_tokens":             1,
+			"output_tokens":            2,
+			"cache_creation_tokens":    3,
+			"cache_read_tokens":        4,
+			"cache_creation_5m_tokens": 5,
+			"cache_creation_1h_tokens": 6,
+			"input_cost":               0.1,
+			"output_cost":              0.2,
+			"cache_creation_cost":      0.3,
+			"cache_read_cost":          0.4,
+			"total_cost":               1.0,
+			"actual_cost":              0.9,
+			"service_tier":             sql.NullString{Valid: true, String: "priority"},
+			"created_at":               now,
+		})})
 		require.NoError(t, err)
 		require.NotNil(t, log.ServiceTier)
 		require.Equal(t, "priority", *log.ServiceTier)

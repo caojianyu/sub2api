@@ -35518,6 +35518,8 @@ type UsageLogMutation struct {
 	addinput_cost               *float64
 	output_cost                 *float64
 	addoutput_cost              *float64
+	meter_cost                  *float64
+	addmeter_cost               *float64
 	cache_creation_cost         *float64
 	addcache_creation_cost      *float64
 	cache_read_cost             *float64
@@ -35526,6 +35528,12 @@ type UsageLogMutation struct {
 	addtotal_cost               *float64
 	actual_cost                 *float64
 	addactual_cost              *float64
+	meter_unit                  *string
+	meter_quantity              *float64
+	addmeter_quantity           *float64
+	meter_unit_price            *float64
+	addmeter_unit_price         *float64
+	meter_detail                *map[string]interface{}
 	rate_multiplier             *float64
 	addrate_multiplier          *float64
 	account_rate_multiplier     *float64
@@ -36703,6 +36711,62 @@ func (m *UsageLogMutation) ResetOutputCost() {
 	m.addoutput_cost = nil
 }
 
+// SetMeterCost sets the "meter_cost" field.
+func (m *UsageLogMutation) SetMeterCost(f float64) {
+	m.meter_cost = &f
+	m.addmeter_cost = nil
+}
+
+// MeterCost returns the value of the "meter_cost" field in the mutation.
+func (m *UsageLogMutation) MeterCost() (r float64, exists bool) {
+	v := m.meter_cost
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldMeterCost returns the old "meter_cost" field's value of the UsageLog entity.
+// If the UsageLog object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *UsageLogMutation) OldMeterCost(ctx context.Context) (v float64, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldMeterCost is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldMeterCost requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldMeterCost: %w", err)
+	}
+	return oldValue.MeterCost, nil
+}
+
+// AddMeterCost adds f to the "meter_cost" field.
+func (m *UsageLogMutation) AddMeterCost(f float64) {
+	if m.addmeter_cost != nil {
+		*m.addmeter_cost += f
+	} else {
+		m.addmeter_cost = &f
+	}
+}
+
+// AddedMeterCost returns the value that was added to the "meter_cost" field in this mutation.
+func (m *UsageLogMutation) AddedMeterCost() (r float64, exists bool) {
+	v := m.addmeter_cost
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// ResetMeterCost resets all changes to the "meter_cost" field.
+func (m *UsageLogMutation) ResetMeterCost() {
+	m.meter_cost = nil
+	m.addmeter_cost = nil
+}
+
 // SetCacheCreationCost sets the "cache_creation_cost" field.
 func (m *UsageLogMutation) SetCacheCreationCost(f float64) {
 	m.cache_creation_cost = &f
@@ -36925,6 +36989,244 @@ func (m *UsageLogMutation) AddedActualCost() (r float64, exists bool) {
 func (m *UsageLogMutation) ResetActualCost() {
 	m.actual_cost = nil
 	m.addactual_cost = nil
+}
+
+// SetMeterUnit sets the "meter_unit" field.
+func (m *UsageLogMutation) SetMeterUnit(s string) {
+	m.meter_unit = &s
+}
+
+// MeterUnit returns the value of the "meter_unit" field in the mutation.
+func (m *UsageLogMutation) MeterUnit() (r string, exists bool) {
+	v := m.meter_unit
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldMeterUnit returns the old "meter_unit" field's value of the UsageLog entity.
+// If the UsageLog object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *UsageLogMutation) OldMeterUnit(ctx context.Context) (v *string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldMeterUnit is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldMeterUnit requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldMeterUnit: %w", err)
+	}
+	return oldValue.MeterUnit, nil
+}
+
+// ClearMeterUnit clears the value of the "meter_unit" field.
+func (m *UsageLogMutation) ClearMeterUnit() {
+	m.meter_unit = nil
+	m.clearedFields[usagelog.FieldMeterUnit] = struct{}{}
+}
+
+// MeterUnitCleared returns if the "meter_unit" field was cleared in this mutation.
+func (m *UsageLogMutation) MeterUnitCleared() bool {
+	_, ok := m.clearedFields[usagelog.FieldMeterUnit]
+	return ok
+}
+
+// ResetMeterUnit resets all changes to the "meter_unit" field.
+func (m *UsageLogMutation) ResetMeterUnit() {
+	m.meter_unit = nil
+	delete(m.clearedFields, usagelog.FieldMeterUnit)
+}
+
+// SetMeterQuantity sets the "meter_quantity" field.
+func (m *UsageLogMutation) SetMeterQuantity(f float64) {
+	m.meter_quantity = &f
+	m.addmeter_quantity = nil
+}
+
+// MeterQuantity returns the value of the "meter_quantity" field in the mutation.
+func (m *UsageLogMutation) MeterQuantity() (r float64, exists bool) {
+	v := m.meter_quantity
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldMeterQuantity returns the old "meter_quantity" field's value of the UsageLog entity.
+// If the UsageLog object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *UsageLogMutation) OldMeterQuantity(ctx context.Context) (v *float64, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldMeterQuantity is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldMeterQuantity requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldMeterQuantity: %w", err)
+	}
+	return oldValue.MeterQuantity, nil
+}
+
+// AddMeterQuantity adds f to the "meter_quantity" field.
+func (m *UsageLogMutation) AddMeterQuantity(f float64) {
+	if m.addmeter_quantity != nil {
+		*m.addmeter_quantity += f
+	} else {
+		m.addmeter_quantity = &f
+	}
+}
+
+// AddedMeterQuantity returns the value that was added to the "meter_quantity" field in this mutation.
+func (m *UsageLogMutation) AddedMeterQuantity() (r float64, exists bool) {
+	v := m.addmeter_quantity
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// ClearMeterQuantity clears the value of the "meter_quantity" field.
+func (m *UsageLogMutation) ClearMeterQuantity() {
+	m.meter_quantity = nil
+	m.addmeter_quantity = nil
+	m.clearedFields[usagelog.FieldMeterQuantity] = struct{}{}
+}
+
+// MeterQuantityCleared returns if the "meter_quantity" field was cleared in this mutation.
+func (m *UsageLogMutation) MeterQuantityCleared() bool {
+	_, ok := m.clearedFields[usagelog.FieldMeterQuantity]
+	return ok
+}
+
+// ResetMeterQuantity resets all changes to the "meter_quantity" field.
+func (m *UsageLogMutation) ResetMeterQuantity() {
+	m.meter_quantity = nil
+	m.addmeter_quantity = nil
+	delete(m.clearedFields, usagelog.FieldMeterQuantity)
+}
+
+// SetMeterUnitPrice sets the "meter_unit_price" field.
+func (m *UsageLogMutation) SetMeterUnitPrice(f float64) {
+	m.meter_unit_price = &f
+	m.addmeter_unit_price = nil
+}
+
+// MeterUnitPrice returns the value of the "meter_unit_price" field in the mutation.
+func (m *UsageLogMutation) MeterUnitPrice() (r float64, exists bool) {
+	v := m.meter_unit_price
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldMeterUnitPrice returns the old "meter_unit_price" field's value of the UsageLog entity.
+// If the UsageLog object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *UsageLogMutation) OldMeterUnitPrice(ctx context.Context) (v *float64, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldMeterUnitPrice is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldMeterUnitPrice requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldMeterUnitPrice: %w", err)
+	}
+	return oldValue.MeterUnitPrice, nil
+}
+
+// AddMeterUnitPrice adds f to the "meter_unit_price" field.
+func (m *UsageLogMutation) AddMeterUnitPrice(f float64) {
+	if m.addmeter_unit_price != nil {
+		*m.addmeter_unit_price += f
+	} else {
+		m.addmeter_unit_price = &f
+	}
+}
+
+// AddedMeterUnitPrice returns the value that was added to the "meter_unit_price" field in this mutation.
+func (m *UsageLogMutation) AddedMeterUnitPrice() (r float64, exists bool) {
+	v := m.addmeter_unit_price
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// ClearMeterUnitPrice clears the value of the "meter_unit_price" field.
+func (m *UsageLogMutation) ClearMeterUnitPrice() {
+	m.meter_unit_price = nil
+	m.addmeter_unit_price = nil
+	m.clearedFields[usagelog.FieldMeterUnitPrice] = struct{}{}
+}
+
+// MeterUnitPriceCleared returns if the "meter_unit_price" field was cleared in this mutation.
+func (m *UsageLogMutation) MeterUnitPriceCleared() bool {
+	_, ok := m.clearedFields[usagelog.FieldMeterUnitPrice]
+	return ok
+}
+
+// ResetMeterUnitPrice resets all changes to the "meter_unit_price" field.
+func (m *UsageLogMutation) ResetMeterUnitPrice() {
+	m.meter_unit_price = nil
+	m.addmeter_unit_price = nil
+	delete(m.clearedFields, usagelog.FieldMeterUnitPrice)
+}
+
+// SetMeterDetail sets the "meter_detail" field.
+func (m *UsageLogMutation) SetMeterDetail(value map[string]interface{}) {
+	m.meter_detail = &value
+}
+
+// MeterDetail returns the value of the "meter_detail" field in the mutation.
+func (m *UsageLogMutation) MeterDetail() (r map[string]interface{}, exists bool) {
+	v := m.meter_detail
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldMeterDetail returns the old "meter_detail" field's value of the UsageLog entity.
+// If the UsageLog object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *UsageLogMutation) OldMeterDetail(ctx context.Context) (v map[string]interface{}, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldMeterDetail is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldMeterDetail requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldMeterDetail: %w", err)
+	}
+	return oldValue.MeterDetail, nil
+}
+
+// ClearMeterDetail clears the value of the "meter_detail" field.
+func (m *UsageLogMutation) ClearMeterDetail() {
+	m.meter_detail = nil
+	m.clearedFields[usagelog.FieldMeterDetail] = struct{}{}
+}
+
+// MeterDetailCleared returns if the "meter_detail" field was cleared in this mutation.
+func (m *UsageLogMutation) MeterDetailCleared() bool {
+	_, ok := m.clearedFields[usagelog.FieldMeterDetail]
+	return ok
+}
+
+// ResetMeterDetail resets all changes to the "meter_detail" field.
+func (m *UsageLogMutation) ResetMeterDetail() {
+	m.meter_detail = nil
+	delete(m.clearedFields, usagelog.FieldMeterDetail)
 }
 
 // SetRateMultiplier sets the "rate_multiplier" field.
@@ -37925,7 +38227,7 @@ func (m *UsageLogMutation) Type() string {
 // order to get all numeric fields that were incremented/decremented, call
 // AddedFields().
 func (m *UsageLogMutation) Fields() []string {
-	fields := make([]string, 0, 41)
+	fields := make([]string, 0, 46)
 	if m.user != nil {
 		fields = append(fields, usagelog.FieldUserID)
 	}
@@ -37989,6 +38291,9 @@ func (m *UsageLogMutation) Fields() []string {
 	if m.output_cost != nil {
 		fields = append(fields, usagelog.FieldOutputCost)
 	}
+	if m.meter_cost != nil {
+		fields = append(fields, usagelog.FieldMeterCost)
+	}
 	if m.cache_creation_cost != nil {
 		fields = append(fields, usagelog.FieldCacheCreationCost)
 	}
@@ -38000,6 +38305,18 @@ func (m *UsageLogMutation) Fields() []string {
 	}
 	if m.actual_cost != nil {
 		fields = append(fields, usagelog.FieldActualCost)
+	}
+	if m.meter_unit != nil {
+		fields = append(fields, usagelog.FieldMeterUnit)
+	}
+	if m.meter_quantity != nil {
+		fields = append(fields, usagelog.FieldMeterQuantity)
+	}
+	if m.meter_unit_price != nil {
+		fields = append(fields, usagelog.FieldMeterUnitPrice)
+	}
+	if m.meter_detail != nil {
+		fields = append(fields, usagelog.FieldMeterDetail)
 	}
 	if m.rate_multiplier != nil {
 		fields = append(fields, usagelog.FieldRateMultiplier)
@@ -38099,6 +38416,8 @@ func (m *UsageLogMutation) Field(name string) (ent.Value, bool) {
 		return m.InputCost()
 	case usagelog.FieldOutputCost:
 		return m.OutputCost()
+	case usagelog.FieldMeterCost:
+		return m.MeterCost()
 	case usagelog.FieldCacheCreationCost:
 		return m.CacheCreationCost()
 	case usagelog.FieldCacheReadCost:
@@ -38107,6 +38426,14 @@ func (m *UsageLogMutation) Field(name string) (ent.Value, bool) {
 		return m.TotalCost()
 	case usagelog.FieldActualCost:
 		return m.ActualCost()
+	case usagelog.FieldMeterUnit:
+		return m.MeterUnit()
+	case usagelog.FieldMeterQuantity:
+		return m.MeterQuantity()
+	case usagelog.FieldMeterUnitPrice:
+		return m.MeterUnitPrice()
+	case usagelog.FieldMeterDetail:
+		return m.MeterDetail()
 	case usagelog.FieldRateMultiplier:
 		return m.RateMultiplier()
 	case usagelog.FieldAccountRateMultiplier:
@@ -38190,6 +38517,8 @@ func (m *UsageLogMutation) OldField(ctx context.Context, name string) (ent.Value
 		return m.OldInputCost(ctx)
 	case usagelog.FieldOutputCost:
 		return m.OldOutputCost(ctx)
+	case usagelog.FieldMeterCost:
+		return m.OldMeterCost(ctx)
 	case usagelog.FieldCacheCreationCost:
 		return m.OldCacheCreationCost(ctx)
 	case usagelog.FieldCacheReadCost:
@@ -38198,6 +38527,14 @@ func (m *UsageLogMutation) OldField(ctx context.Context, name string) (ent.Value
 		return m.OldTotalCost(ctx)
 	case usagelog.FieldActualCost:
 		return m.OldActualCost(ctx)
+	case usagelog.FieldMeterUnit:
+		return m.OldMeterUnit(ctx)
+	case usagelog.FieldMeterQuantity:
+		return m.OldMeterQuantity(ctx)
+	case usagelog.FieldMeterUnitPrice:
+		return m.OldMeterUnitPrice(ctx)
+	case usagelog.FieldMeterDetail:
+		return m.OldMeterDetail(ctx)
 	case usagelog.FieldRateMultiplier:
 		return m.OldRateMultiplier(ctx)
 	case usagelog.FieldAccountRateMultiplier:
@@ -38386,6 +38723,13 @@ func (m *UsageLogMutation) SetField(name string, value ent.Value) error {
 		}
 		m.SetOutputCost(v)
 		return nil
+	case usagelog.FieldMeterCost:
+		v, ok := value.(float64)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetMeterCost(v)
+		return nil
 	case usagelog.FieldCacheCreationCost:
 		v, ok := value.(float64)
 		if !ok {
@@ -38413,6 +38757,34 @@ func (m *UsageLogMutation) SetField(name string, value ent.Value) error {
 			return fmt.Errorf("unexpected type %T for field %s", value, name)
 		}
 		m.SetActualCost(v)
+		return nil
+	case usagelog.FieldMeterUnit:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetMeterUnit(v)
+		return nil
+	case usagelog.FieldMeterQuantity:
+		v, ok := value.(float64)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetMeterQuantity(v)
+		return nil
+	case usagelog.FieldMeterUnitPrice:
+		v, ok := value.(float64)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetMeterUnitPrice(v)
+		return nil
+	case usagelog.FieldMeterDetail:
+		v, ok := value.(map[string]interface{})
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetMeterDetail(v)
 		return nil
 	case usagelog.FieldRateMultiplier:
 		v, ok := value.(float64)
@@ -38561,6 +38933,9 @@ func (m *UsageLogMutation) AddedFields() []string {
 	if m.addoutput_cost != nil {
 		fields = append(fields, usagelog.FieldOutputCost)
 	}
+	if m.addmeter_cost != nil {
+		fields = append(fields, usagelog.FieldMeterCost)
+	}
 	if m.addcache_creation_cost != nil {
 		fields = append(fields, usagelog.FieldCacheCreationCost)
 	}
@@ -38572,6 +38947,12 @@ func (m *UsageLogMutation) AddedFields() []string {
 	}
 	if m.addactual_cost != nil {
 		fields = append(fields, usagelog.FieldActualCost)
+	}
+	if m.addmeter_quantity != nil {
+		fields = append(fields, usagelog.FieldMeterQuantity)
+	}
+	if m.addmeter_unit_price != nil {
+		fields = append(fields, usagelog.FieldMeterUnitPrice)
 	}
 	if m.addrate_multiplier != nil {
 		fields = append(fields, usagelog.FieldRateMultiplier)
@@ -38617,6 +38998,8 @@ func (m *UsageLogMutation) AddedField(name string) (ent.Value, bool) {
 		return m.AddedInputCost()
 	case usagelog.FieldOutputCost:
 		return m.AddedOutputCost()
+	case usagelog.FieldMeterCost:
+		return m.AddedMeterCost()
 	case usagelog.FieldCacheCreationCost:
 		return m.AddedCacheCreationCost()
 	case usagelog.FieldCacheReadCost:
@@ -38625,6 +39008,10 @@ func (m *UsageLogMutation) AddedField(name string) (ent.Value, bool) {
 		return m.AddedTotalCost()
 	case usagelog.FieldActualCost:
 		return m.AddedActualCost()
+	case usagelog.FieldMeterQuantity:
+		return m.AddedMeterQuantity()
+	case usagelog.FieldMeterUnitPrice:
+		return m.AddedMeterUnitPrice()
 	case usagelog.FieldRateMultiplier:
 		return m.AddedRateMultiplier()
 	case usagelog.FieldAccountRateMultiplier:
@@ -38709,6 +39096,13 @@ func (m *UsageLogMutation) AddField(name string, value ent.Value) error {
 		}
 		m.AddOutputCost(v)
 		return nil
+	case usagelog.FieldMeterCost:
+		v, ok := value.(float64)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.AddMeterCost(v)
+		return nil
 	case usagelog.FieldCacheCreationCost:
 		v, ok := value.(float64)
 		if !ok {
@@ -38736,6 +39130,20 @@ func (m *UsageLogMutation) AddField(name string, value ent.Value) error {
 			return fmt.Errorf("unexpected type %T for field %s", value, name)
 		}
 		m.AddActualCost(v)
+		return nil
+	case usagelog.FieldMeterQuantity:
+		v, ok := value.(float64)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.AddMeterQuantity(v)
+		return nil
+	case usagelog.FieldMeterUnitPrice:
+		v, ok := value.(float64)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.AddMeterUnitPrice(v)
 		return nil
 	case usagelog.FieldRateMultiplier:
 		v, ok := value.(float64)
@@ -38811,6 +39219,18 @@ func (m *UsageLogMutation) ClearedFields() []string {
 	if m.FieldCleared(usagelog.FieldSubscriptionID) {
 		fields = append(fields, usagelog.FieldSubscriptionID)
 	}
+	if m.FieldCleared(usagelog.FieldMeterUnit) {
+		fields = append(fields, usagelog.FieldMeterUnit)
+	}
+	if m.FieldCleared(usagelog.FieldMeterQuantity) {
+		fields = append(fields, usagelog.FieldMeterQuantity)
+	}
+	if m.FieldCleared(usagelog.FieldMeterUnitPrice) {
+		fields = append(fields, usagelog.FieldMeterUnitPrice)
+	}
+	if m.FieldCleared(usagelog.FieldMeterDetail) {
+		fields = append(fields, usagelog.FieldMeterDetail)
+	}
 	if m.FieldCleared(usagelog.FieldAccountRateMultiplier) {
 		fields = append(fields, usagelog.FieldAccountRateMultiplier)
 	}
@@ -38878,6 +39298,18 @@ func (m *UsageLogMutation) ClearField(name string) error {
 		return nil
 	case usagelog.FieldSubscriptionID:
 		m.ClearSubscriptionID()
+		return nil
+	case usagelog.FieldMeterUnit:
+		m.ClearMeterUnit()
+		return nil
+	case usagelog.FieldMeterQuantity:
+		m.ClearMeterQuantity()
+		return nil
+	case usagelog.FieldMeterUnitPrice:
+		m.ClearMeterUnitPrice()
+		return nil
+	case usagelog.FieldMeterDetail:
+		m.ClearMeterDetail()
 		return nil
 	case usagelog.FieldAccountRateMultiplier:
 		m.ClearAccountRateMultiplier()
@@ -38980,6 +39412,9 @@ func (m *UsageLogMutation) ResetField(name string) error {
 	case usagelog.FieldOutputCost:
 		m.ResetOutputCost()
 		return nil
+	case usagelog.FieldMeterCost:
+		m.ResetMeterCost()
+		return nil
 	case usagelog.FieldCacheCreationCost:
 		m.ResetCacheCreationCost()
 		return nil
@@ -38991,6 +39426,18 @@ func (m *UsageLogMutation) ResetField(name string) error {
 		return nil
 	case usagelog.FieldActualCost:
 		m.ResetActualCost()
+		return nil
+	case usagelog.FieldMeterUnit:
+		m.ResetMeterUnit()
+		return nil
+	case usagelog.FieldMeterQuantity:
+		m.ResetMeterQuantity()
+		return nil
+	case usagelog.FieldMeterUnitPrice:
+		m.ResetMeterUnitPrice()
+		return nil
+	case usagelog.FieldMeterDetail:
+		m.ResetMeterDetail()
 		return nil
 	case usagelog.FieldRateMultiplier:
 		m.ResetRateMultiplier()

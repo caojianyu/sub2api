@@ -56,6 +56,8 @@ const (
 	FieldInputCost = "input_cost"
 	// FieldOutputCost holds the string denoting the output_cost field in the database.
 	FieldOutputCost = "output_cost"
+	// FieldMeterCost holds the string denoting the meter_cost field in the database.
+	FieldMeterCost = "meter_cost"
 	// FieldCacheCreationCost holds the string denoting the cache_creation_cost field in the database.
 	FieldCacheCreationCost = "cache_creation_cost"
 	// FieldCacheReadCost holds the string denoting the cache_read_cost field in the database.
@@ -64,6 +66,14 @@ const (
 	FieldTotalCost = "total_cost"
 	// FieldActualCost holds the string denoting the actual_cost field in the database.
 	FieldActualCost = "actual_cost"
+	// FieldMeterUnit holds the string denoting the meter_unit field in the database.
+	FieldMeterUnit = "meter_unit"
+	// FieldMeterQuantity holds the string denoting the meter_quantity field in the database.
+	FieldMeterQuantity = "meter_quantity"
+	// FieldMeterUnitPrice holds the string denoting the meter_unit_price field in the database.
+	FieldMeterUnitPrice = "meter_unit_price"
+	// FieldMeterDetail holds the string denoting the meter_detail field in the database.
+	FieldMeterDetail = "meter_detail"
 	// FieldRateMultiplier holds the string denoting the rate_multiplier field in the database.
 	FieldRateMultiplier = "rate_multiplier"
 	// FieldAccountRateMultiplier holds the string denoting the account_rate_multiplier field in the database.
@@ -169,10 +179,15 @@ var Columns = []string{
 	FieldCacheCreation1hTokens,
 	FieldInputCost,
 	FieldOutputCost,
+	FieldMeterCost,
 	FieldCacheCreationCost,
 	FieldCacheReadCost,
 	FieldTotalCost,
 	FieldActualCost,
+	FieldMeterUnit,
+	FieldMeterQuantity,
+	FieldMeterUnitPrice,
+	FieldMeterDetail,
 	FieldRateMultiplier,
 	FieldAccountRateMultiplier,
 	FieldBillingType,
@@ -232,6 +247,8 @@ var (
 	DefaultInputCost float64
 	// DefaultOutputCost holds the default value on creation for the "output_cost" field.
 	DefaultOutputCost float64
+	// DefaultMeterCost holds the default value on creation for the "meter_cost" field.
+	DefaultMeterCost float64
 	// DefaultCacheCreationCost holds the default value on creation for the "cache_creation_cost" field.
 	DefaultCacheCreationCost float64
 	// DefaultCacheReadCost holds the default value on creation for the "cache_read_cost" field.
@@ -240,6 +257,8 @@ var (
 	DefaultTotalCost float64
 	// DefaultActualCost holds the default value on creation for the "actual_cost" field.
 	DefaultActualCost float64
+	// MeterUnitValidator is a validator for the "meter_unit" field. It is called by the builders before save.
+	MeterUnitValidator func(string) error
 	// DefaultRateMultiplier holds the default value on creation for the "rate_multiplier" field.
 	DefaultRateMultiplier float64
 	// DefaultBillingType holds the default value on creation for the "billing_type" field.
@@ -379,6 +398,11 @@ func ByOutputCost(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldOutputCost, opts...).ToFunc()
 }
 
+// ByMeterCost orders the results by the meter_cost field.
+func ByMeterCost(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldMeterCost, opts...).ToFunc()
+}
+
 // ByCacheCreationCost orders the results by the cache_creation_cost field.
 func ByCacheCreationCost(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldCacheCreationCost, opts...).ToFunc()
@@ -397,6 +421,21 @@ func ByTotalCost(opts ...sql.OrderTermOption) OrderOption {
 // ByActualCost orders the results by the actual_cost field.
 func ByActualCost(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldActualCost, opts...).ToFunc()
+}
+
+// ByMeterUnit orders the results by the meter_unit field.
+func ByMeterUnit(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldMeterUnit, opts...).ToFunc()
+}
+
+// ByMeterQuantity orders the results by the meter_quantity field.
+func ByMeterQuantity(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldMeterQuantity, opts...).ToFunc()
+}
+
+// ByMeterUnitPrice orders the results by the meter_unit_price field.
+func ByMeterUnitPrice(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldMeterUnitPrice, opts...).ToFunc()
 }
 
 // ByRateMultiplier orders the results by the rate_multiplier field.

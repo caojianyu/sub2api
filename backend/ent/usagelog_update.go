@@ -437,6 +437,27 @@ func (_u *UsageLogUpdate) AddOutputCost(v float64) *UsageLogUpdate {
 	return _u
 }
 
+// SetMeterCost sets the "meter_cost" field.
+func (_u *UsageLogUpdate) SetMeterCost(v float64) *UsageLogUpdate {
+	_u.mutation.ResetMeterCost()
+	_u.mutation.SetMeterCost(v)
+	return _u
+}
+
+// SetNillableMeterCost sets the "meter_cost" field if the given value is not nil.
+func (_u *UsageLogUpdate) SetNillableMeterCost(v *float64) *UsageLogUpdate {
+	if v != nil {
+		_u.SetMeterCost(*v)
+	}
+	return _u
+}
+
+// AddMeterCost adds value to the "meter_cost" field.
+func (_u *UsageLogUpdate) AddMeterCost(v float64) *UsageLogUpdate {
+	_u.mutation.AddMeterCost(v)
+	return _u
+}
+
 // SetCacheCreationCost sets the "cache_creation_cost" field.
 func (_u *UsageLogUpdate) SetCacheCreationCost(v float64) *UsageLogUpdate {
 	_u.mutation.ResetCacheCreationCost()
@@ -518,6 +539,92 @@ func (_u *UsageLogUpdate) SetNillableActualCost(v *float64) *UsageLogUpdate {
 // AddActualCost adds value to the "actual_cost" field.
 func (_u *UsageLogUpdate) AddActualCost(v float64) *UsageLogUpdate {
 	_u.mutation.AddActualCost(v)
+	return _u
+}
+
+// SetMeterUnit sets the "meter_unit" field.
+func (_u *UsageLogUpdate) SetMeterUnit(v string) *UsageLogUpdate {
+	_u.mutation.SetMeterUnit(v)
+	return _u
+}
+
+// SetNillableMeterUnit sets the "meter_unit" field if the given value is not nil.
+func (_u *UsageLogUpdate) SetNillableMeterUnit(v *string) *UsageLogUpdate {
+	if v != nil {
+		_u.SetMeterUnit(*v)
+	}
+	return _u
+}
+
+// ClearMeterUnit clears the value of the "meter_unit" field.
+func (_u *UsageLogUpdate) ClearMeterUnit() *UsageLogUpdate {
+	_u.mutation.ClearMeterUnit()
+	return _u
+}
+
+// SetMeterQuantity sets the "meter_quantity" field.
+func (_u *UsageLogUpdate) SetMeterQuantity(v float64) *UsageLogUpdate {
+	_u.mutation.ResetMeterQuantity()
+	_u.mutation.SetMeterQuantity(v)
+	return _u
+}
+
+// SetNillableMeterQuantity sets the "meter_quantity" field if the given value is not nil.
+func (_u *UsageLogUpdate) SetNillableMeterQuantity(v *float64) *UsageLogUpdate {
+	if v != nil {
+		_u.SetMeterQuantity(*v)
+	}
+	return _u
+}
+
+// AddMeterQuantity adds value to the "meter_quantity" field.
+func (_u *UsageLogUpdate) AddMeterQuantity(v float64) *UsageLogUpdate {
+	_u.mutation.AddMeterQuantity(v)
+	return _u
+}
+
+// ClearMeterQuantity clears the value of the "meter_quantity" field.
+func (_u *UsageLogUpdate) ClearMeterQuantity() *UsageLogUpdate {
+	_u.mutation.ClearMeterQuantity()
+	return _u
+}
+
+// SetMeterUnitPrice sets the "meter_unit_price" field.
+func (_u *UsageLogUpdate) SetMeterUnitPrice(v float64) *UsageLogUpdate {
+	_u.mutation.ResetMeterUnitPrice()
+	_u.mutation.SetMeterUnitPrice(v)
+	return _u
+}
+
+// SetNillableMeterUnitPrice sets the "meter_unit_price" field if the given value is not nil.
+func (_u *UsageLogUpdate) SetNillableMeterUnitPrice(v *float64) *UsageLogUpdate {
+	if v != nil {
+		_u.SetMeterUnitPrice(*v)
+	}
+	return _u
+}
+
+// AddMeterUnitPrice adds value to the "meter_unit_price" field.
+func (_u *UsageLogUpdate) AddMeterUnitPrice(v float64) *UsageLogUpdate {
+	_u.mutation.AddMeterUnitPrice(v)
+	return _u
+}
+
+// ClearMeterUnitPrice clears the value of the "meter_unit_price" field.
+func (_u *UsageLogUpdate) ClearMeterUnitPrice() *UsageLogUpdate {
+	_u.mutation.ClearMeterUnitPrice()
+	return _u
+}
+
+// SetMeterDetail sets the "meter_detail" field.
+func (_u *UsageLogUpdate) SetMeterDetail(v map[string]interface{}) *UsageLogUpdate {
+	_u.mutation.SetMeterDetail(v)
+	return _u
+}
+
+// ClearMeterDetail clears the value of the "meter_detail" field.
+func (_u *UsageLogUpdate) ClearMeterDetail() *UsageLogUpdate {
+	_u.mutation.ClearMeterDetail()
 	return _u
 }
 
@@ -949,6 +1056,11 @@ func (_u *UsageLogUpdate) check() error {
 			return &ValidationError{Name: "billing_mode", err: fmt.Errorf(`ent: validator failed for field "UsageLog.billing_mode": %w`, err)}
 		}
 	}
+	if v, ok := _u.mutation.MeterUnit(); ok {
+		if err := usagelog.MeterUnitValidator(v); err != nil {
+			return &ValidationError{Name: "meter_unit", err: fmt.Errorf(`ent: validator failed for field "UsageLog.meter_unit": %w`, err)}
+		}
+	}
 	if v, ok := _u.mutation.UserAgent(); ok {
 		if err := usagelog.UserAgentValidator(v); err != nil {
 			return &ValidationError{Name: "user_agent", err: fmt.Errorf(`ent: validator failed for field "UsageLog.user_agent": %w`, err)}
@@ -1096,6 +1208,12 @@ func (_u *UsageLogUpdate) sqlSave(ctx context.Context) (_node int, err error) {
 	if value, ok := _u.mutation.AddedOutputCost(); ok {
 		_spec.AddField(usagelog.FieldOutputCost, field.TypeFloat64, value)
 	}
+	if value, ok := _u.mutation.MeterCost(); ok {
+		_spec.SetField(usagelog.FieldMeterCost, field.TypeFloat64, value)
+	}
+	if value, ok := _u.mutation.AddedMeterCost(); ok {
+		_spec.AddField(usagelog.FieldMeterCost, field.TypeFloat64, value)
+	}
 	if value, ok := _u.mutation.CacheCreationCost(); ok {
 		_spec.SetField(usagelog.FieldCacheCreationCost, field.TypeFloat64, value)
 	}
@@ -1119,6 +1237,36 @@ func (_u *UsageLogUpdate) sqlSave(ctx context.Context) (_node int, err error) {
 	}
 	if value, ok := _u.mutation.AddedActualCost(); ok {
 		_spec.AddField(usagelog.FieldActualCost, field.TypeFloat64, value)
+	}
+	if value, ok := _u.mutation.MeterUnit(); ok {
+		_spec.SetField(usagelog.FieldMeterUnit, field.TypeString, value)
+	}
+	if _u.mutation.MeterUnitCleared() {
+		_spec.ClearField(usagelog.FieldMeterUnit, field.TypeString)
+	}
+	if value, ok := _u.mutation.MeterQuantity(); ok {
+		_spec.SetField(usagelog.FieldMeterQuantity, field.TypeFloat64, value)
+	}
+	if value, ok := _u.mutation.AddedMeterQuantity(); ok {
+		_spec.AddField(usagelog.FieldMeterQuantity, field.TypeFloat64, value)
+	}
+	if _u.mutation.MeterQuantityCleared() {
+		_spec.ClearField(usagelog.FieldMeterQuantity, field.TypeFloat64)
+	}
+	if value, ok := _u.mutation.MeterUnitPrice(); ok {
+		_spec.SetField(usagelog.FieldMeterUnitPrice, field.TypeFloat64, value)
+	}
+	if value, ok := _u.mutation.AddedMeterUnitPrice(); ok {
+		_spec.AddField(usagelog.FieldMeterUnitPrice, field.TypeFloat64, value)
+	}
+	if _u.mutation.MeterUnitPriceCleared() {
+		_spec.ClearField(usagelog.FieldMeterUnitPrice, field.TypeFloat64)
+	}
+	if value, ok := _u.mutation.MeterDetail(); ok {
+		_spec.SetField(usagelog.FieldMeterDetail, field.TypeJSON, value)
+	}
+	if _u.mutation.MeterDetailCleared() {
+		_spec.ClearField(usagelog.FieldMeterDetail, field.TypeJSON)
 	}
 	if value, ok := _u.mutation.RateMultiplier(); ok {
 		_spec.SetField(usagelog.FieldRateMultiplier, field.TypeFloat64, value)
@@ -1783,6 +1931,27 @@ func (_u *UsageLogUpdateOne) AddOutputCost(v float64) *UsageLogUpdateOne {
 	return _u
 }
 
+// SetMeterCost sets the "meter_cost" field.
+func (_u *UsageLogUpdateOne) SetMeterCost(v float64) *UsageLogUpdateOne {
+	_u.mutation.ResetMeterCost()
+	_u.mutation.SetMeterCost(v)
+	return _u
+}
+
+// SetNillableMeterCost sets the "meter_cost" field if the given value is not nil.
+func (_u *UsageLogUpdateOne) SetNillableMeterCost(v *float64) *UsageLogUpdateOne {
+	if v != nil {
+		_u.SetMeterCost(*v)
+	}
+	return _u
+}
+
+// AddMeterCost adds value to the "meter_cost" field.
+func (_u *UsageLogUpdateOne) AddMeterCost(v float64) *UsageLogUpdateOne {
+	_u.mutation.AddMeterCost(v)
+	return _u
+}
+
 // SetCacheCreationCost sets the "cache_creation_cost" field.
 func (_u *UsageLogUpdateOne) SetCacheCreationCost(v float64) *UsageLogUpdateOne {
 	_u.mutation.ResetCacheCreationCost()
@@ -1864,6 +2033,92 @@ func (_u *UsageLogUpdateOne) SetNillableActualCost(v *float64) *UsageLogUpdateOn
 // AddActualCost adds value to the "actual_cost" field.
 func (_u *UsageLogUpdateOne) AddActualCost(v float64) *UsageLogUpdateOne {
 	_u.mutation.AddActualCost(v)
+	return _u
+}
+
+// SetMeterUnit sets the "meter_unit" field.
+func (_u *UsageLogUpdateOne) SetMeterUnit(v string) *UsageLogUpdateOne {
+	_u.mutation.SetMeterUnit(v)
+	return _u
+}
+
+// SetNillableMeterUnit sets the "meter_unit" field if the given value is not nil.
+func (_u *UsageLogUpdateOne) SetNillableMeterUnit(v *string) *UsageLogUpdateOne {
+	if v != nil {
+		_u.SetMeterUnit(*v)
+	}
+	return _u
+}
+
+// ClearMeterUnit clears the value of the "meter_unit" field.
+func (_u *UsageLogUpdateOne) ClearMeterUnit() *UsageLogUpdateOne {
+	_u.mutation.ClearMeterUnit()
+	return _u
+}
+
+// SetMeterQuantity sets the "meter_quantity" field.
+func (_u *UsageLogUpdateOne) SetMeterQuantity(v float64) *UsageLogUpdateOne {
+	_u.mutation.ResetMeterQuantity()
+	_u.mutation.SetMeterQuantity(v)
+	return _u
+}
+
+// SetNillableMeterQuantity sets the "meter_quantity" field if the given value is not nil.
+func (_u *UsageLogUpdateOne) SetNillableMeterQuantity(v *float64) *UsageLogUpdateOne {
+	if v != nil {
+		_u.SetMeterQuantity(*v)
+	}
+	return _u
+}
+
+// AddMeterQuantity adds value to the "meter_quantity" field.
+func (_u *UsageLogUpdateOne) AddMeterQuantity(v float64) *UsageLogUpdateOne {
+	_u.mutation.AddMeterQuantity(v)
+	return _u
+}
+
+// ClearMeterQuantity clears the value of the "meter_quantity" field.
+func (_u *UsageLogUpdateOne) ClearMeterQuantity() *UsageLogUpdateOne {
+	_u.mutation.ClearMeterQuantity()
+	return _u
+}
+
+// SetMeterUnitPrice sets the "meter_unit_price" field.
+func (_u *UsageLogUpdateOne) SetMeterUnitPrice(v float64) *UsageLogUpdateOne {
+	_u.mutation.ResetMeterUnitPrice()
+	_u.mutation.SetMeterUnitPrice(v)
+	return _u
+}
+
+// SetNillableMeterUnitPrice sets the "meter_unit_price" field if the given value is not nil.
+func (_u *UsageLogUpdateOne) SetNillableMeterUnitPrice(v *float64) *UsageLogUpdateOne {
+	if v != nil {
+		_u.SetMeterUnitPrice(*v)
+	}
+	return _u
+}
+
+// AddMeterUnitPrice adds value to the "meter_unit_price" field.
+func (_u *UsageLogUpdateOne) AddMeterUnitPrice(v float64) *UsageLogUpdateOne {
+	_u.mutation.AddMeterUnitPrice(v)
+	return _u
+}
+
+// ClearMeterUnitPrice clears the value of the "meter_unit_price" field.
+func (_u *UsageLogUpdateOne) ClearMeterUnitPrice() *UsageLogUpdateOne {
+	_u.mutation.ClearMeterUnitPrice()
+	return _u
+}
+
+// SetMeterDetail sets the "meter_detail" field.
+func (_u *UsageLogUpdateOne) SetMeterDetail(v map[string]interface{}) *UsageLogUpdateOne {
+	_u.mutation.SetMeterDetail(v)
+	return _u
+}
+
+// ClearMeterDetail clears the value of the "meter_detail" field.
+func (_u *UsageLogUpdateOne) ClearMeterDetail() *UsageLogUpdateOne {
+	_u.mutation.ClearMeterDetail()
 	return _u
 }
 
@@ -2308,6 +2563,11 @@ func (_u *UsageLogUpdateOne) check() error {
 			return &ValidationError{Name: "billing_mode", err: fmt.Errorf(`ent: validator failed for field "UsageLog.billing_mode": %w`, err)}
 		}
 	}
+	if v, ok := _u.mutation.MeterUnit(); ok {
+		if err := usagelog.MeterUnitValidator(v); err != nil {
+			return &ValidationError{Name: "meter_unit", err: fmt.Errorf(`ent: validator failed for field "UsageLog.meter_unit": %w`, err)}
+		}
+	}
 	if v, ok := _u.mutation.UserAgent(); ok {
 		if err := usagelog.UserAgentValidator(v); err != nil {
 			return &ValidationError{Name: "user_agent", err: fmt.Errorf(`ent: validator failed for field "UsageLog.user_agent": %w`, err)}
@@ -2472,6 +2732,12 @@ func (_u *UsageLogUpdateOne) sqlSave(ctx context.Context) (_node *UsageLog, err 
 	if value, ok := _u.mutation.AddedOutputCost(); ok {
 		_spec.AddField(usagelog.FieldOutputCost, field.TypeFloat64, value)
 	}
+	if value, ok := _u.mutation.MeterCost(); ok {
+		_spec.SetField(usagelog.FieldMeterCost, field.TypeFloat64, value)
+	}
+	if value, ok := _u.mutation.AddedMeterCost(); ok {
+		_spec.AddField(usagelog.FieldMeterCost, field.TypeFloat64, value)
+	}
 	if value, ok := _u.mutation.CacheCreationCost(); ok {
 		_spec.SetField(usagelog.FieldCacheCreationCost, field.TypeFloat64, value)
 	}
@@ -2495,6 +2761,36 @@ func (_u *UsageLogUpdateOne) sqlSave(ctx context.Context) (_node *UsageLog, err 
 	}
 	if value, ok := _u.mutation.AddedActualCost(); ok {
 		_spec.AddField(usagelog.FieldActualCost, field.TypeFloat64, value)
+	}
+	if value, ok := _u.mutation.MeterUnit(); ok {
+		_spec.SetField(usagelog.FieldMeterUnit, field.TypeString, value)
+	}
+	if _u.mutation.MeterUnitCleared() {
+		_spec.ClearField(usagelog.FieldMeterUnit, field.TypeString)
+	}
+	if value, ok := _u.mutation.MeterQuantity(); ok {
+		_spec.SetField(usagelog.FieldMeterQuantity, field.TypeFloat64, value)
+	}
+	if value, ok := _u.mutation.AddedMeterQuantity(); ok {
+		_spec.AddField(usagelog.FieldMeterQuantity, field.TypeFloat64, value)
+	}
+	if _u.mutation.MeterQuantityCleared() {
+		_spec.ClearField(usagelog.FieldMeterQuantity, field.TypeFloat64)
+	}
+	if value, ok := _u.mutation.MeterUnitPrice(); ok {
+		_spec.SetField(usagelog.FieldMeterUnitPrice, field.TypeFloat64, value)
+	}
+	if value, ok := _u.mutation.AddedMeterUnitPrice(); ok {
+		_spec.AddField(usagelog.FieldMeterUnitPrice, field.TypeFloat64, value)
+	}
+	if _u.mutation.MeterUnitPriceCleared() {
+		_spec.ClearField(usagelog.FieldMeterUnitPrice, field.TypeFloat64)
+	}
+	if value, ok := _u.mutation.MeterDetail(); ok {
+		_spec.SetField(usagelog.FieldMeterDetail, field.TypeJSON, value)
+	}
+	if _u.mutation.MeterDetailCleared() {
+		_spec.ClearField(usagelog.FieldMeterDetail, field.TypeJSON)
 	}
 	if value, ok := _u.mutation.RateMultiplier(); ok {
 		_spec.SetField(usagelog.FieldRateMultiplier, field.TypeFloat64, value)

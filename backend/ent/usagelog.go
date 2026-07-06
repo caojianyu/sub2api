@@ -43,7 +43,7 @@ type UsageLog struct {
 	ModelMappingChain *string `json:"model_mapping_chain,omitempty"`
 	// 计费层级标签
 	BillingTier *string `json:"billing_tier,omitempty"`
-	// 计费模式：token/per_request/image
+	// 计费模式：token/per_request/image/unit
 	BillingMode *string `json:"billing_mode,omitempty"`
 	// GroupID holds the value of the "group_id" field.
 	GroupID *int64 `json:"group_id,omitempty"`
@@ -65,6 +65,8 @@ type UsageLog struct {
 	InputCost float64 `json:"input_cost,omitempty"`
 	// OutputCost holds the value of the "output_cost" field.
 	OutputCost float64 `json:"output_cost,omitempty"`
+	// MeterCost holds the value of the "meter_cost" field.
+	MeterCost float64 `json:"meter_cost,omitempty"`
 	// CacheCreationCost holds the value of the "cache_creation_cost" field.
 	CacheCreationCost float64 `json:"cache_creation_cost,omitempty"`
 	// CacheReadCost holds the value of the "cache_read_cost" field.
@@ -73,6 +75,14 @@ type UsageLog struct {
 	TotalCost float64 `json:"total_cost,omitempty"`
 	// ActualCost holds the value of the "actual_cost" field.
 	ActualCost float64 `json:"actual_cost,omitempty"`
+	// MeterUnit holds the value of the "meter_unit" field.
+	MeterUnit *string `json:"meter_unit,omitempty"`
+	// MeterQuantity holds the value of the "meter_quantity" field.
+	MeterQuantity *float64 `json:"meter_quantity,omitempty"`
+	// MeterUnitPrice holds the value of the "meter_unit_price" field.
+	MeterUnitPrice *float64 `json:"meter_unit_price,omitempty"`
+	// MeterDetail holds the value of the "meter_detail" field.
+	MeterDetail map[string]interface{} `json:"meter_detail,omitempty"`
 	// RateMultiplier holds the value of the "rate_multiplier" field.
 	RateMultiplier float64 `json:"rate_multiplier,omitempty"`
 	// AccountRateMultiplier holds the value of the "account_rate_multiplier" field.
@@ -188,15 +198,15 @@ func (*UsageLog) scanValues(columns []string) ([]any, error) {
 	values := make([]any, len(columns))
 	for i := range columns {
 		switch columns[i] {
-		case usagelog.FieldImageSizeBreakdown:
+		case usagelog.FieldMeterDetail, usagelog.FieldImageSizeBreakdown:
 			values[i] = new([]byte)
 		case usagelog.FieldStream, usagelog.FieldCacheTTLOverridden:
 			values[i] = new(sql.NullBool)
-		case usagelog.FieldInputCost, usagelog.FieldOutputCost, usagelog.FieldCacheCreationCost, usagelog.FieldCacheReadCost, usagelog.FieldTotalCost, usagelog.FieldActualCost, usagelog.FieldRateMultiplier, usagelog.FieldAccountRateMultiplier:
+		case usagelog.FieldInputCost, usagelog.FieldOutputCost, usagelog.FieldMeterCost, usagelog.FieldCacheCreationCost, usagelog.FieldCacheReadCost, usagelog.FieldTotalCost, usagelog.FieldActualCost, usagelog.FieldMeterQuantity, usagelog.FieldMeterUnitPrice, usagelog.FieldRateMultiplier, usagelog.FieldAccountRateMultiplier:
 			values[i] = new(sql.NullFloat64)
 		case usagelog.FieldID, usagelog.FieldUserID, usagelog.FieldAPIKeyID, usagelog.FieldAccountID, usagelog.FieldChannelID, usagelog.FieldGroupID, usagelog.FieldSubscriptionID, usagelog.FieldInputTokens, usagelog.FieldOutputTokens, usagelog.FieldCacheCreationTokens, usagelog.FieldCacheReadTokens, usagelog.FieldCacheCreation5mTokens, usagelog.FieldCacheCreation1hTokens, usagelog.FieldBillingType, usagelog.FieldDurationMs, usagelog.FieldFirstTokenMs, usagelog.FieldImageCount:
 			values[i] = new(sql.NullInt64)
-		case usagelog.FieldRequestID, usagelog.FieldModel, usagelog.FieldRequestedModel, usagelog.FieldUpstreamModel, usagelog.FieldModelMappingChain, usagelog.FieldBillingTier, usagelog.FieldBillingMode, usagelog.FieldUserAgent, usagelog.FieldIPAddress, usagelog.FieldImageSize, usagelog.FieldImageInputSize, usagelog.FieldImageOutputSize, usagelog.FieldImageSizeSource:
+		case usagelog.FieldRequestID, usagelog.FieldModel, usagelog.FieldRequestedModel, usagelog.FieldUpstreamModel, usagelog.FieldModelMappingChain, usagelog.FieldBillingTier, usagelog.FieldBillingMode, usagelog.FieldMeterUnit, usagelog.FieldUserAgent, usagelog.FieldIPAddress, usagelog.FieldImageSize, usagelog.FieldImageInputSize, usagelog.FieldImageOutputSize, usagelog.FieldImageSizeSource:
 			values[i] = new(sql.NullString)
 		case usagelog.FieldCreatedAt:
 			values[i] = new(sql.NullTime)
@@ -355,6 +365,12 @@ func (_m *UsageLog) assignValues(columns []string, values []any) error {
 			} else if value.Valid {
 				_m.OutputCost = value.Float64
 			}
+		case usagelog.FieldMeterCost:
+			if value, ok := values[i].(*sql.NullFloat64); !ok {
+				return fmt.Errorf("unexpected type %T for field meter_cost", values[i])
+			} else if value.Valid {
+				_m.MeterCost = value.Float64
+			}
 		case usagelog.FieldCacheCreationCost:
 			if value, ok := values[i].(*sql.NullFloat64); !ok {
 				return fmt.Errorf("unexpected type %T for field cache_creation_cost", values[i])
@@ -378,6 +394,35 @@ func (_m *UsageLog) assignValues(columns []string, values []any) error {
 				return fmt.Errorf("unexpected type %T for field actual_cost", values[i])
 			} else if value.Valid {
 				_m.ActualCost = value.Float64
+			}
+		case usagelog.FieldMeterUnit:
+			if value, ok := values[i].(*sql.NullString); !ok {
+				return fmt.Errorf("unexpected type %T for field meter_unit", values[i])
+			} else if value.Valid {
+				_m.MeterUnit = new(string)
+				*_m.MeterUnit = value.String
+			}
+		case usagelog.FieldMeterQuantity:
+			if value, ok := values[i].(*sql.NullFloat64); !ok {
+				return fmt.Errorf("unexpected type %T for field meter_quantity", values[i])
+			} else if value.Valid {
+				_m.MeterQuantity = new(float64)
+				*_m.MeterQuantity = value.Float64
+			}
+		case usagelog.FieldMeterUnitPrice:
+			if value, ok := values[i].(*sql.NullFloat64); !ok {
+				return fmt.Errorf("unexpected type %T for field meter_unit_price", values[i])
+			} else if value.Valid {
+				_m.MeterUnitPrice = new(float64)
+				*_m.MeterUnitPrice = value.Float64
+			}
+		case usagelog.FieldMeterDetail:
+			if value, ok := values[i].(*[]byte); !ok {
+				return fmt.Errorf("unexpected type %T for field meter_detail", values[i])
+			} else if value != nil && len(*value) > 0 {
+				if err := json.Unmarshal(*value, &_m.MeterDetail); err != nil {
+					return fmt.Errorf("unmarshal field meter_detail: %w", err)
+				}
 			}
 		case usagelog.FieldRateMultiplier:
 			if value, ok := values[i].(*sql.NullFloat64); !ok {
@@ -626,6 +671,9 @@ func (_m *UsageLog) String() string {
 	builder.WriteString("output_cost=")
 	builder.WriteString(fmt.Sprintf("%v", _m.OutputCost))
 	builder.WriteString(", ")
+	builder.WriteString("meter_cost=")
+	builder.WriteString(fmt.Sprintf("%v", _m.MeterCost))
+	builder.WriteString(", ")
 	builder.WriteString("cache_creation_cost=")
 	builder.WriteString(fmt.Sprintf("%v", _m.CacheCreationCost))
 	builder.WriteString(", ")
@@ -637,6 +685,24 @@ func (_m *UsageLog) String() string {
 	builder.WriteString(", ")
 	builder.WriteString("actual_cost=")
 	builder.WriteString(fmt.Sprintf("%v", _m.ActualCost))
+	builder.WriteString(", ")
+	if v := _m.MeterUnit; v != nil {
+		builder.WriteString("meter_unit=")
+		builder.WriteString(*v)
+	}
+	builder.WriteString(", ")
+	if v := _m.MeterQuantity; v != nil {
+		builder.WriteString("meter_quantity=")
+		builder.WriteString(fmt.Sprintf("%v", *v))
+	}
+	builder.WriteString(", ")
+	if v := _m.MeterUnitPrice; v != nil {
+		builder.WriteString("meter_unit_price=")
+		builder.WriteString(fmt.Sprintf("%v", *v))
+	}
+	builder.WriteString(", ")
+	builder.WriteString("meter_detail=")
+	builder.WriteString(fmt.Sprintf("%v", _m.MeterDetail))
 	builder.WriteString(", ")
 	builder.WriteString("rate_multiplier=")
 	builder.WriteString(fmt.Sprintf("%v", _m.RateMultiplier))
