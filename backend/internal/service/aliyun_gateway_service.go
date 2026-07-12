@@ -20,10 +20,13 @@ import (
 )
 
 const (
+	AliyunEndpointFiles               = "/v1/files"
+	AliyunEndpointUploads             = "/api/v1/uploads"
 	AliyunEndpointTTS                 = "/api/v1/services/audio/tts/SpeechSynthesizer"
 	AliyunEndpointASRTranscription    = "/api/v1/services/audio/asr/transcription"
 	AliyunEndpointTTSCustomization    = "/api/v1/services/audio/tts/customization"
 	AliyunEndpointMultiModalEmbedding = "/api/v1/services/embeddings/multimodal"
+	AliyunEndpointCanonicalEmbedding  = "/api/v1/services/embeddings/multimodal-embedding/multimodal-embedding"
 	AliyunEndpointTasksPrefix         = "/api/v1/tasks/"
 
 	AliyunModelTTS                 = "cosyvoice-v3-flash"
@@ -139,6 +142,15 @@ func (s *AliyunGatewayService) forwardSubmitOrSync(ctx context.Context, in Aliyu
 	if err != nil {
 		return nil, err
 	}
+	if spec.kind == "passthrough" && spec.model == "" && in.RawQuery != "" {
+		if query, parseErr := url.ParseQuery(in.RawQuery); parseErr == nil {
+			spec.model = strings.TrimSpace(query.Get("model"))
+		}
+	}
+	resolvedPricing, err := s.preflightRequestPricing(ctx, in.APIKey, spec)
+	if err != nil {
+		return nil, err
+	}
 	account, release, err := s.selectAndAcquireAccount(ctx, in.APIKey.GroupID, spec.model)
 	if err != nil {
 		return nil, err
@@ -167,7 +179,7 @@ func (s *AliyunGatewayService) forwardSubmitOrSync(ctx context.Context, in Aliyu
 					GroupID:        in.APIKey.GroupID,
 					Model:          spec.model,
 					Status:         "pending",
-					RequestHash:    stringPtr(HashUsageRequestPayload(in.Body)),
+					RequestHash:    aliyunStringPtr(HashUsageRequestPayload(in.Body)),
 					SubmitResponse: jsonObjectFromBytes(result.Body),
 				})
 			}
@@ -190,6 +202,7 @@ func (s *AliyunGatewayService) forwardSubmitOrSync(ctx context.Context, in Aliyu
 			MediaType:        spec.mediaType,
 			MeterDetail:      spec.detail,
 			PayloadHash:      HashUsageRequestPayload(in.Body),
+			ResolvedPricing:  resolvedPricing,
 		}); err != nil {
 			return nil, err
 		}
@@ -217,7 +230,8 @@ func (s *AliyunGatewayService) forwardSubmitOrSync(ctx context.Context, in Aliyu
 				"endpoint": in.Path,
 				"source":   "embedding_response",
 			},
-			PayloadHash: HashUsageRequestPayload(in.Body),
+			PayloadHash:     HashUsageRequestPayload(in.Body),
+			ResolvedPricing: resolvedPricing,
 		}); err != nil {
 			return nil, err
 		}
@@ -243,6 +257,13 @@ func (s *AliyunGatewayService) forwardASRTask(ctx context.Context, in AliyunGate
 	}
 	if task.UserID != in.APIKey.User.ID || task.APIKeyID != in.APIKey.ID {
 		return nil, aliyunGatewayError(http.StatusForbidden, "TASK_FORBIDDEN", "Aliyun task does not belong to this API key")
+	}
+	var resolvedPricing *ResolvedPricing
+	if task.BilledAt == nil {
+		resolvedPricing, err = s.resolveUnitPricing(ctx, in.APIKey, task.Model, AliyunMeterAudioSecond)
+		if err != nil {
+			return nil, err
+		}
 	}
 	account, err := s.accountRepo.GetByID(ctx, task.AccountID)
 	if err != nil {
@@ -295,7 +316,8 @@ func (s *AliyunGatewayService) forwardASRTask(ctx context.Context, in AliyunGate
 			"status":   status,
 			"endpoint": in.Path,
 		},
-		PayloadHash: taskID,
+		PayloadHash:     taskID,
+		ResolvedPricing: resolvedPricing,
 	}); err != nil {
 		return nil, err
 	}
@@ -316,6 +338,10 @@ func (s *AliyunGatewayService) resolveRequestSpec(path string, body []byte) (ali
 	obj := jsonObjectFromBytes(body)
 	model := firstNonEmptyString(jsonStringAt(obj, "model"))
 	switch path {
+	case AliyunEndpointFiles:
+		return aliyunRequestSpec{kind: "passthrough", model: "qwen-long"}, nil
+	case AliyunEndpointUploads:
+		return aliyunRequestSpec{kind: "passthrough"}, nil
 	case AliyunEndpointTTS:
 		if model == "" {
 			model = AliyunModelTTS
@@ -344,17 +370,40 @@ func (s *AliyunGatewayService) resolveRequestSpec(path string, body []byte) (ali
 		if model == "" {
 			model = AliyunModelVoiceEnrollment
 		}
-		return aliyunRequestSpec{
-			kind:      "unit",
-			model:     model,
-			unit:      AliyunMeterVoice,
-			quantity:  1,
-			mediaType: "audio",
-			detail: map[string]any{
-				"endpoint": path,
-			},
-		}, nil
-	case AliyunEndpointMultiModalEmbedding:
+		action := strings.ToLower(firstNonEmptyString(
+			jsonStringAt(obj, "input.action"),
+			jsonStringAt(obj, "action"),
+		))
+		if action == "" {
+			return aliyunRequestSpec{}, aliyunGatewayError(http.StatusBadRequest, "ACTION_REQUIRED", "voice customization action is required")
+		}
+		detail := map[string]any{
+			"endpoint": path,
+			"action":   action,
+		}
+		switch action {
+		case "create_voice", "create":
+			return aliyunRequestSpec{
+				kind:      "unit",
+				model:     model,
+				unit:      AliyunMeterVoice,
+				quantity:  1,
+				mediaType: "audio",
+				detail:    detail,
+			}, nil
+		case "query_voice", "delete_voice", "list_voice", "query", "delete", "list":
+			// Management operations do not create a billable voice. They are
+			// intentionally forwarded without a usage charge.
+			return aliyunRequestSpec{
+				kind:      "passthrough",
+				model:     model,
+				mediaType: "audio",
+				detail:    detail,
+			}, nil
+		default:
+			return aliyunRequestSpec{}, aliyunGatewayError(http.StatusBadRequest, "ACTION_NOT_SUPPORTED", "unsupported voice customization action: "+action)
+		}
+	case AliyunEndpointMultiModalEmbedding, AliyunEndpointCanonicalEmbedding:
 		if model == "" {
 			model = AliyunModelMultiModalEmbedding
 		}
@@ -362,6 +411,56 @@ func (s *AliyunGatewayService) resolveRequestSpec(path string, body []byte) (ali
 	default:
 		return aliyunRequestSpec{}, aliyunGatewayError(http.StatusNotFound, "ENDPOINT_NOT_SUPPORTED", "Aliyun endpoint is not supported")
 	}
+}
+
+func (s *AliyunGatewayService) preflightRequestPricing(ctx context.Context, apiKey *APIKey, spec aliyunRequestSpec) (*ResolvedPricing, error) {
+	switch spec.kind {
+	case "unit":
+		return s.resolveUnitPricing(ctx, apiKey, spec.model, spec.unit)
+	case "asr_submit":
+		return s.resolveUnitPricing(ctx, apiKey, spec.model, AliyunMeterAudioSecond)
+	case "embedding":
+		return s.resolveUnitPricing(ctx, apiKey, spec.model, AliyunMeterToken)
+	default:
+		return nil, nil
+	}
+}
+
+func (s *AliyunGatewayService) resolveUnitPricing(ctx context.Context, apiKey *APIKey, model, meterUnit string) (*ResolvedPricing, error) {
+	if s == nil || s.resolver == nil || apiKey == nil || apiKey.Group == nil {
+		return nil, aliyunGatewayError(http.StatusInternalServerError, "BILLING_CONTEXT_MISSING", "unit billing context is incomplete")
+	}
+	groupID := apiKey.Group.ID
+	resolved := s.resolver.Resolve(ctx, PricingInput{Model: model, GroupID: &groupID})
+	if err := validateAliyunUnitPricing(resolved, model, meterUnit); err != nil {
+		return nil, err
+	}
+	return resolved, nil
+}
+
+func validateAliyunUnitPricing(resolved *ResolvedPricing, model, meterUnit string) error {
+	if resolved == nil || resolved.Source != PricingSourceChannel || resolved.Mode != BillingModeUnit || resolved.channelPricing == nil {
+		return aliyunGatewayError(http.StatusInternalServerError, "UNIT_PRICING_MISSING", "unit pricing is not configured for model "+model)
+	}
+	configuredUnit := strings.TrimSpace(resolved.MeterUnit)
+	if configuredUnit == "" || !strings.EqualFold(configuredUnit, strings.TrimSpace(meterUnit)) {
+		return aliyunGatewayError(http.StatusInternalServerError, "UNIT_PRICING_INVALID", fmt.Sprintf("unit pricing mismatch for model %s: request=%q pricing=%q", model, meterUnit, configuredUnit))
+	}
+	// A nil pointer means the administrator did not configure a price. It is
+	// distinct from an explicit zero, which is valid only for a known free unit.
+	if resolved.channelPricing.MeterUnitPrice == nil {
+		return aliyunGatewayError(http.StatusInternalServerError, "UNIT_PRICING_MISSING", "unit price is not configured for model "+model)
+	}
+	price := *resolved.channelPricing.MeterUnitPrice
+	if price < 0 || (price == 0 && !allowsFreeAliyunUnitPrice(model, meterUnit)) {
+		return aliyunGatewayError(http.StatusInternalServerError, "UNIT_PRICING_INVALID", fmt.Sprintf("unit price must be positive for model %s unit %s", model, meterUnit))
+	}
+	return nil
+}
+
+func allowsFreeAliyunUnitPrice(model, meterUnit string) bool {
+	return strings.EqualFold(strings.TrimSpace(model), AliyunModelVoiceEnrollment) &&
+		strings.EqualFold(strings.TrimSpace(meterUnit), AliyunMeterVoice)
 }
 
 func (s *AliyunGatewayService) selectAndAcquireAccount(ctx context.Context, groupID *int64, model string) (*Account, func(), error) {
@@ -401,7 +500,11 @@ func (s *AliyunGatewayService) forwardToUpstream(ctx context.Context, account *A
 	if apiKey == "" {
 		return nil, aliyunGatewayError(http.StatusBadGateway, "ACCOUNT_CREDENTIAL_MISSING", "Aliyun account api_key is missing")
 	}
-	target, err := buildAliyunTargetURL(account.GetAliyunBaseURL(), in.Path, in.RawQuery)
+	baseURL := account.GetAliyunBaseURL()
+	if in.Path == AliyunEndpointFiles {
+		baseURL = aliyunOpenAICompatibleBaseURL(baseURL)
+	}
+	target, err := buildAliyunTargetURL(baseURL, in.Path, in.RawQuery)
 	if err != nil {
 		return nil, err
 	}
@@ -498,6 +601,7 @@ type aliyunUnitBillInput struct {
 	MediaType        string
 	MeterDetail      map[string]any
 	PayloadHash      string
+	ResolvedPricing  *ResolvedPricing
 }
 
 func (s *AliyunGatewayService) billUnit(ctx context.Context, in aliyunUnitBillInput) error {
@@ -505,9 +609,15 @@ func (s *AliyunGatewayService) billUnit(ctx context.Context, in aliyunUnitBillIn
 		return aliyunGatewayError(http.StatusInternalServerError, "BILLING_CONTEXT_MISSING", "billing context is incomplete")
 	}
 	groupID := in.APIKey.Group.ID
-	resolved := s.resolver.Resolve(ctx, PricingInput{Model: in.Model, GroupID: &groupID})
-	if resolved == nil || resolved.Source != PricingSourceChannel || resolved.Mode != BillingModeUnit {
-		return aliyunGatewayError(http.StatusInternalServerError, "UNIT_PRICING_MISSING", "unit pricing is not configured for model "+in.Model)
+	resolved := in.ResolvedPricing
+	if resolved == nil {
+		var err error
+		resolved, err = s.resolveUnitPricing(ctx, in.APIKey, in.Model, in.MeterUnit)
+		if err != nil {
+			return err
+		}
+	} else if err := validateAliyunUnitPricing(resolved, in.Model, in.MeterUnit); err != nil {
+		return err
 	}
 	multiplier := 1.0
 	if s.cfg != nil {
@@ -517,14 +627,15 @@ func (s *AliyunGatewayService) billUnit(ctx context.Context, in aliyunUnitBillIn
 		multiplier = s.gatewayService.getUserGroupRateMultiplier(ctx, in.APIKey.User.ID, *in.APIKey.GroupID, in.APIKey.Group.RateMultiplier)
 	}
 	cost, err := s.billingService.CalculateCostUnified(CostInput{
-		Ctx:            ctx,
-		Model:          in.Model,
-		GroupID:        &groupID,
-		MeterUnit:      in.MeterUnit,
-		MeterQuantity:  in.MeterQuantity,
-		RateMultiplier: multiplier,
-		Resolver:       s.resolver,
-		Resolved:       resolved,
+		Ctx:                ctx,
+		Model:              in.Model,
+		GroupID:            &groupID,
+		MeterUnit:          in.MeterUnit,
+		MeterQuantity:      in.MeterQuantity,
+		AllowZeroUnitPrice: allowsFreeAliyunUnitPrice(in.Model, in.MeterUnit),
+		RateMultiplier:     multiplier,
+		Resolver:           s.resolver,
+		Resolved:           resolved,
 	})
 	if err != nil {
 		return err
@@ -785,7 +896,7 @@ func normalizeDurationSeconds(key string, value float64) float64 {
 	return value
 }
 
-func stringPtr(v string) *string {
+func aliyunStringPtr(v string) *string {
 	return &v
 }
 

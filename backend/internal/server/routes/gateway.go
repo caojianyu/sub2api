@@ -32,12 +32,7 @@ func RegisterGatewayRoutes(
 	requireGroupGoogle := middleware.RequireGroupAssignment(settingService, middleware.GoogleErrorWriter)
 
 	isOpenAIResponsesCompatibleGatewayPlatform := func(c *gin.Context) bool {
-		switch getGroupPlatform(c) {
-		case service.PlatformOpenAI, service.PlatformGrok:
-			return true
-		default:
-			return false
-		}
+		return isOpenAICompatibleGatewayPlatform(getGroupPlatform(c))
 	}
 	isOpenAIGatewayPlatform := func(c *gin.Context) bool {
 		return getGroupPlatform(c) == service.PlatformOpenAI
@@ -93,11 +88,13 @@ func RegisterGatewayRoutes(
 	aliyunNative.Use(gin.HandlerFunc(apiKeyAuth))
 	aliyunNative.Use(requireGroupAnthropic)
 	{
+		aliyunNative.GET("/uploads", h.AliyunGateway.Proxy)
 		aliyunNative.POST("/services/audio/tts/SpeechSynthesizer", h.AliyunGateway.Proxy)
 		aliyunNative.POST("/services/audio/asr/transcription", h.AliyunGateway.Proxy)
 		aliyunNative.GET("/tasks/:task_id", h.AliyunGateway.Proxy)
 		aliyunNative.POST("/services/audio/tts/customization", h.AliyunGateway.Proxy)
 		aliyunNative.POST("/services/embeddings/multimodal", h.AliyunGateway.Proxy)
+		aliyunNative.POST("/services/embeddings/multimodal-embedding/multimodal-embedding", h.AliyunGateway.Proxy)
 	}
 
 	gateway := r.Group("/v1")
@@ -138,6 +135,19 @@ func RegisterGatewayRoutes(
 		})
 		gateway.GET("/models", h.Gateway.Models)
 		gateway.GET("/usage", h.Gateway.Usage)
+		gateway.POST("/files", func(c *gin.Context) {
+			if getGroupPlatform(c) == service.PlatformAliyun {
+				h.AliyunGateway.Proxy(c)
+				return
+			}
+			service.MarkOpsClientBusinessLimited(c, service.OpsClientBusinessLimitedReasonLocalFeatureGate)
+			c.JSON(http.StatusNotFound, gin.H{
+				"error": gin.H{
+					"type":    "not_found_error",
+					"message": "Files API is not supported for this platform",
+				},
+			})
+		})
 		// OpenAI Responses API: auto-route based on group platform
 		gateway.POST("/responses", func(c *gin.Context) {
 			if isOpenAIResponsesCompatibleGatewayPlatform(c) {
@@ -279,6 +289,15 @@ func RegisterGatewayRoutes(
 		antigravityV1Beta.POST("/models/*modelAction", h.Gateway.GeminiV1BetaModels)
 	}
 
+}
+
+func isOpenAICompatibleGatewayPlatform(platform string) bool {
+	switch platform {
+	case service.PlatformOpenAI, service.PlatformGrok, service.PlatformAliyun:
+		return true
+	default:
+		return false
+	}
 }
 
 // getGroupPlatform extracts the group platform from the API Key stored in context.

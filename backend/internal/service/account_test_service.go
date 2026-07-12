@@ -751,16 +751,7 @@ func (s *AccountTestService) testAliyunAccountConnection(c *gin.Context, account
 }
 
 func normalizeAliyunCompatibleBaseURL(baseURL string) string {
-	normalized := strings.TrimRight(strings.TrimSpace(baseURL), "/")
-	lower := strings.ToLower(normalized)
-	switch {
-	case strings.HasSuffix(lower, "/compatible-mode"),
-		strings.HasSuffix(lower, "/compatible-mode/v1"),
-		strings.HasSuffix(lower, "/compatible-mode/v1/chat/completions"):
-		return normalized
-	default:
-		return normalized + "/compatible-mode"
-	}
+	return aliyunOpenAICompatibleBaseURL(baseURL)
 }
 
 // testOpenAIChatCompletionsConnection tests an OpenAI-compatible APIKey account

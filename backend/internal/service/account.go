@@ -233,7 +233,7 @@ func (a *Account) IsGrokOAuth() bool {
 }
 
 func (a *Account) IsOpenAICompatible() bool {
-	return a != nil && (a.Platform == PlatformOpenAI || a.Platform == PlatformGrok)
+	return a != nil && (a.Platform == PlatformOpenAI || a.Platform == PlatformGrok || a.Platform == PlatformAliyun)
 }
 
 func (a *Account) GeminiOAuthType() string {
@@ -1143,6 +1143,12 @@ func (a *Account) IsOpenAIApiKey() bool {
 }
 
 func (a *Account) GetOpenAIBaseURL() string {
+	if a == nil {
+		return ""
+	}
+	if a.IsAliyun() {
+		return aliyunOpenAICompatibleBaseURL(a.GetAliyunBaseURL())
+	}
 	if !a.IsOpenAI() {
 		return ""
 	}
@@ -1220,10 +1226,32 @@ func (a *Account) GetOpenAIIDToken() string {
 }
 
 func (a *Account) GetOpenAIApiKey() string {
-	if !a.IsOpenAIApiKey() {
+	if a == nil || a.Type != AccountTypeAPIKey || (!a.IsOpenAI() && !a.IsAliyun()) {
 		return ""
 	}
 	return a.GetCredential("api_key")
+}
+
+// aliyunOpenAICompatibleBaseURL returns the base URL expected by the generic
+// OpenAI-compatible gateway. Official DashScope hosts expose OpenAI endpoints
+// below /compatible-mode/v1, while custom bases such as model-router expose
+// /v1 directly and must be preserved as configured.
+func aliyunOpenAICompatibleBaseURL(baseURL string) string {
+	normalized := strings.TrimRight(strings.TrimSpace(baseURL), "/")
+	if normalized == "" {
+		return ""
+	}
+	lower := strings.ToLower(normalized)
+	if strings.HasSuffix(lower, "/compatible-mode") ||
+		strings.HasSuffix(lower, "/compatible-mode/v1") ||
+		strings.HasSuffix(lower, "/compatible-mode/v1/chat/completions") ||
+		strings.HasSuffix(lower, "/compatible-mode/v1/responses") {
+		return normalized
+	}
+	if strings.Contains(lower, ".aliyuncs.com") || strings.Contains(lower, "://aliyuncs.com") {
+		return normalized + "/compatible-mode"
+	}
+	return normalized
 }
 
 func (a *Account) GetOpenAIUserAgent() string {

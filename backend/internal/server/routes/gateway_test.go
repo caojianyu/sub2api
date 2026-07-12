@@ -194,3 +194,30 @@ func TestGatewayRoutesOpenAICountTokensPathIsRegistered(t *testing.T) {
 	router.ServeHTTP(w, req)
 	require.NotEqual(t, http.StatusNotFound, w.Code)
 }
+
+func TestAliyunUsesOpenAICompatibleGateway(t *testing.T) {
+	require.True(t, isOpenAICompatibleGatewayPlatform(service.PlatformAliyun))
+	require.True(t, isOpenAICompatibleGatewayPlatform(service.PlatformOpenAI))
+	require.True(t, isOpenAICompatibleGatewayPlatform(service.PlatformGrok))
+	require.False(t, isOpenAICompatibleGatewayPlatform(service.PlatformAnthropic))
+}
+
+func TestAliyunFilesUploadsAndCanonicalEmbeddingRoutesAreRegistered(t *testing.T) {
+	router := newGatewayRoutesTestRouter(service.PlatformAliyun)
+	routes := router.Routes()
+
+	want := map[string]bool{
+		http.MethodPost + " /v1/files":      false,
+		http.MethodGet + " /api/v1/uploads": false,
+		http.MethodPost + " /api/v1/services/embeddings/multimodal-embedding/multimodal-embedding": false,
+	}
+	for _, route := range routes {
+		key := route.Method + " " + route.Path
+		if _, ok := want[key]; ok {
+			want[key] = true
+		}
+	}
+	for route, registered := range want {
+		require.True(t, registered, "route %s must be registered", route)
+	}
+}
