@@ -43,6 +43,21 @@ const (
 	aliyunMeterHeaderQuantity = "X-Sub2API-Meter-Quantity"
 )
 
+// SupportsAliyunFilesGatewayPlatform reports whether a group can use the
+// OpenAI-compatible Files endpoint backed by model-router or DashScope.
+//
+// Some deployments represent a DashScope/model-router upstream as an OpenAI
+// API-key account. Files supports both representations, while the remaining
+// Aliyun-native endpoints stay restricted to Aliyun groups.
+func SupportsAliyunFilesGatewayPlatform(platform string) bool {
+	switch strings.ToLower(strings.TrimSpace(platform)) {
+	case PlatformAliyun, PlatformOpenAI:
+		return true
+	default:
+		return false
+	}
+}
+
 type AliyunGatewayService struct {
 	accountRepo      AccountRepository
 	usageLogRepo     UsageLogRepository
@@ -118,7 +133,8 @@ func (s *AliyunGatewayService) Forward(ctx context.Context, in AliyunGatewayRequ
 	if in.APIKey == nil || in.APIKey.User == nil || in.APIKey.Group == nil {
 		return nil, aliyunGatewayError(http.StatusForbidden, "GROUP_REQUIRED", "API key must be assigned to an Aliyun group")
 	}
-	if in.APIKey.Group.Platform != PlatformAliyun {
+	if in.APIKey.Group.Platform != PlatformAliyun &&
+		!(in.Path == AliyunEndpointFiles && SupportsAliyunFilesGatewayPlatform(in.APIKey.Group.Platform)) {
 		return nil, aliyunGatewayError(http.StatusNotFound, "PLATFORM_NOT_SUPPORTED", "Aliyun native APIs are not supported for this group")
 	}
 	var (
@@ -493,16 +509,26 @@ func (s *AliyunGatewayService) acquireAccountSlot(ctx context.Context, account *
 }
 
 func (s *AliyunGatewayService) forwardToUpstream(ctx context.Context, account *Account, in AliyunGatewayRequest) (*AliyunGatewayResult, error) {
-	if account == nil || !account.IsAliyun() {
-		return nil, aliyunGatewayError(http.StatusBadGateway, "ACCOUNT_PLATFORM_MISMATCH", "selected account is not an Aliyun account")
+	if account == nil {
+		return nil, aliyunGatewayError(http.StatusBadGateway, "ACCOUNT_PLATFORM_MISMATCH", "selected account is missing")
 	}
-	apiKey := account.GetAliyunAPIKey()
-	if apiKey == "" {
-		return nil, aliyunGatewayError(http.StatusBadGateway, "ACCOUNT_CREDENTIAL_MISSING", "Aliyun account api_key is missing")
-	}
-	baseURL := account.GetAliyunBaseURL()
+
+	var apiKey, baseURL string
 	if in.Path == AliyunEndpointFiles {
-		baseURL = aliyunOpenAICompatibleBaseURL(baseURL)
+		if !account.IsOpenAI() && !account.IsAliyun() {
+			return nil, aliyunGatewayError(http.StatusBadGateway, "ACCOUNT_PLATFORM_MISMATCH", "selected account is not OpenAI-compatible")
+		}
+		apiKey = strings.TrimSpace(account.GetOpenAIApiKey())
+		baseURL = account.GetOpenAIBaseURL()
+	} else {
+		if !account.IsAliyun() {
+			return nil, aliyunGatewayError(http.StatusBadGateway, "ACCOUNT_PLATFORM_MISMATCH", "selected account is not an Aliyun account")
+		}
+		apiKey = strings.TrimSpace(account.GetAliyunAPIKey())
+		baseURL = account.GetAliyunBaseURL()
+	}
+	if apiKey == "" {
+		return nil, aliyunGatewayError(http.StatusBadGateway, "ACCOUNT_CREDENTIAL_MISSING", "upstream account api_key is missing")
 	}
 	target, err := buildAliyunTargetURL(baseURL, in.Path, in.RawQuery)
 	if err != nil {
