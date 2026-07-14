@@ -871,6 +871,7 @@ func extractUsageQuantity(obj map[string]any) float64 {
 		return 0
 	}
 	paths := []string{
+		"usage.seconds",
 		"usage.duration",
 		"usage.audio_duration",
 		"usage.total_duration",

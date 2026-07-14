@@ -181,6 +181,16 @@ func TestAliyunForwardSubmitOrSync_ValidatesPricingBeforeUpstream(t *testing.T) 
 	require.Zero(t, spy.calls, "upstream must not be called when unit pricing is missing")
 }
 
+func TestAliyunExtractMeter_DashScopeASRUsageSeconds(t *testing.T) {
+	svc := &AliyunGatewayService{}
+	body := []byte(`{"output":{"task_status":"SUCCEEDED"},"usage":{"seconds":12.5}}`)
+
+	unit, quantity := svc.extractMeterFromHeadersOrBody(nil, body, AliyunMeterAudioSecond)
+
+	require.Equal(t, AliyunMeterAudioSecond, unit)
+	require.Equal(t, 12.5, quantity)
+}
+
 func TestAliyunBillUnit_RecordsFreeVoiceEnrollmentWithoutDeduction(t *testing.T) {
 	zero := 0.0
 	resolver := aliyunUnitResolver(t, AliyunModelVoiceEnrollment, AliyunMeterVoice, &zero)
