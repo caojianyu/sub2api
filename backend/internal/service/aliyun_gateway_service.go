@@ -576,7 +576,11 @@ func buildAliyunTargetURL(baseURL, path, rawQuery string) (string, error) {
 	if !strings.HasPrefix(path, "/") {
 		path = "/" + path
 	}
-	u, err := url.Parse(baseURL + path)
+	target := baseURL + path
+	if path == AliyunEndpointFiles {
+		target = buildOpenAIEndpointURL(baseURL, path)
+	}
+	u, err := url.Parse(target)
 	if err != nil {
 		return "", err
 	}

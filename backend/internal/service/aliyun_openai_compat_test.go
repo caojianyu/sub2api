@@ -93,7 +93,7 @@ func TestAliyunFilesForwardUsesOpenAICompatibleAccountCredentials(t *testing.T) 
 		Concurrency: 3,
 		Credentials: map[string]any{
 			"api_key":  "sk-dashscope-test",
-			"base_url": "http://model-router:10030/",
+			"base_url": "http://model-router:10030/v1",
 		},
 	}
 
@@ -190,4 +190,23 @@ func TestAliyunOfficialFilesURLUsesCompatibleMode(t *testing.T) {
 	target, err := buildAliyunTargetURL(baseURL, AliyunEndpointFiles, "")
 	require.NoError(t, err)
 	require.Equal(t, "https://dashscope.aliyuncs.com/compatible-mode/v1/files", target)
+}
+
+func TestAliyunFilesURLNormalizesOpenAICompatibleBases(t *testing.T) {
+	tests := []struct {
+		name string
+		base string
+	}{
+		{name: "bare router root", base: "http://model-router:10030"},
+		{name: "versioned router root", base: "http://model-router:10030/v1"},
+		{name: "complete files endpoint", base: "http://model-router:10030/v1/files"},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			target, err := buildAliyunTargetURL(tt.base, AliyunEndpointFiles, "purpose=file-extract")
+			require.NoError(t, err)
+			require.Equal(t, "http://model-router:10030/v1/files?purpose=file-extract", target)
+		})
+	}
 }
