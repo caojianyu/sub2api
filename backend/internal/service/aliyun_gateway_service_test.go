@@ -4,6 +4,7 @@ package service
 
 import (
 	"context"
+	"errors"
 	"net/http"
 	"testing"
 
@@ -35,6 +36,17 @@ func (r *aliyunUsageLogRepoStub) Create(_ context.Context, log *UsageLog) (bool,
 type aliyunHTTPUpstreamSpy struct {
 	HTTPUpstream
 	calls int
+}
+
+type aliyunTaskRepoStub struct {
+	AliyunTaskRepository
+	err  error
+	task *AliyunTaskRecord
+}
+
+func (r *aliyunTaskRepoStub) UpsertSubmitted(_ context.Context, task *AliyunTaskRecord) error {
+	r.task = task
+	return r.err
 }
 
 func (s *aliyunHTTPUpstreamSpy) Do(_ *http.Request, _ string, _ int64, _ int) (*http.Response, error) {
@@ -189,6 +201,39 @@ func TestAliyunExtractMeter_DashScopeASRUsageSeconds(t *testing.T) {
 
 	require.Equal(t, AliyunMeterAudioSecond, unit)
 	require.Equal(t, 12.5, quantity)
+}
+
+func TestAliyunExtractMeter_UsageSecondsOnlyAppliesToAudio(t *testing.T) {
+	svc := &AliyunGatewayService{}
+	body := []byte(`{"usage":{"seconds":12.5}}`)
+
+	unit, quantity := svc.extractMeterFromHeadersOrBody(nil, body, AliyunMeterToken)
+
+	require.Equal(t, AliyunMeterToken, unit)
+	require.Zero(t, quantity)
+}
+
+func TestAliyunTrackSubmittedASRTask_PropagatesPersistenceFailure(t *testing.T) {
+	repoErr := errors.New("database unavailable")
+	repo := &aliyunTaskRepoStub{err: repoErr}
+	svc := &AliyunGatewayService{taskRepo: repo}
+	apiKey := aliyunTestAPIKey()
+	body := []byte(`{"output":{"task_id":"task-123"}}`)
+
+	err := svc.trackSubmittedASRTask(context.Background(), AliyunGatewayRequest{
+		APIKey: apiKey,
+		Body:   []byte(`{"model":"qwen3-asr-flash-filetrans"}`),
+	}, &Account{ID: 30}, AliyunModelASR, body)
+
+	var gatewayErr *AliyunGatewayError
+	require.ErrorAs(t, err, &gatewayErr)
+	require.Equal(t, http.StatusInternalServerError, gatewayErr.Status)
+	require.Equal(t, "ALIYUN_TASK_TRACKING_FAILED", gatewayErr.Code)
+	require.NotNil(t, repo.task)
+	require.Equal(t, "task-123", repo.task.TaskID)
+	require.Equal(t, apiKey.User.ID, repo.task.UserID)
+	require.Equal(t, apiKey.ID, repo.task.APIKeyID)
+	require.Equal(t, int64(30), repo.task.AccountID)
 }
 
 func TestAliyunBillUnit_RecordsFreeVoiceEnrollmentWithoutDeduction(t *testing.T) {

@@ -83,3 +83,36 @@ func TestBuildUsageBillingCommand_SubscriptionAppliesRateMultiplier(t *testing.T
 		})
 	}
 }
+
+func TestBuildUsageBillingCommand_PreservesAliyunMetering(t *testing.T) {
+	t.Parallel()
+
+	unit := AliyunMeterAudioSecond
+	quantity := 12.5
+	usageLog := &UsageLog{
+		Model:         AliyunModelASR,
+		MeterCost:     0.025,
+		MeterUnit:     &unit,
+		MeterQuantity: &quantity,
+	}
+	p := &postUsageBillingParams{
+		Cost:    &CostBreakdown{TotalCost: 0.025, ActualCost: 0.025},
+		User:    &User{ID: 1},
+		APIKey:  &APIKey{ID: 2},
+		Account: &Account{ID: 3},
+	}
+
+	cmd := buildUsageBillingCommand("aliyun:asr:task-1", usageLog, p)
+	if cmd == nil {
+		t.Fatal("buildUsageBillingCommand returned nil")
+	}
+	if cmd.MeterUnit != unit {
+		t.Errorf("MeterUnit = %q, want %q", cmd.MeterUnit, unit)
+	}
+	if cmd.MeterQuantity != quantity {
+		t.Errorf("MeterQuantity = %v, want %v", cmd.MeterQuantity, quantity)
+	}
+	if cmd.MeterCost != usageLog.MeterCost {
+		t.Errorf("MeterCost = %v, want %v", cmd.MeterCost, usageLog.MeterCost)
+	}
+}

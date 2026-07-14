@@ -52,9 +52,10 @@ func TestAPIContracts(t *testing.T) {
 					"email": "alice@example.com",
 					"email_bound": true,
 					"username": "alice",
-					"role": "user",
-					"balance": 12.5,
-					"concurrency": 5,
+						"role": "user",
+						"balance": 12.5,
+						"frozen_balance": 0,
+						"concurrency": 5,
 					"rpm_limit": 0,
 					"status": "active",
 					"allowed_groups": null,
@@ -233,6 +234,8 @@ func TestAPIContracts(t *testing.T) {
 					"ip_whitelist": null,
 					"ip_blacklist": null,
 					"last_used_at": null,
+					"last_used_ip": null,
+					"current_concurrency": 0,
 					"quota": 0,
 					"quota_used": 0,
 					"rate_limit_5h": 0,
@@ -282,6 +285,8 @@ func TestAPIContracts(t *testing.T) {
 							"ip_whitelist": null,
 							"ip_blacklist": null,
 							"last_used_at": null,
+							"last_used_ip": null,
+							"current_concurrency": 0,
 							"quota": 0,
 							"quota_used": 0,
 							"rate_limit_5h": 0,
@@ -358,9 +363,18 @@ func TestAPIContracts(t *testing.T) {
 						"image_price_1k": null,
 						"image_price_2k": null,
 						"image_price_4k": null,
+						"video_price_480p": null,
+						"video_price_720p": null,
+						"video_price_1080p": null,
+						"web_search_price_per_call": null,
 						"allow_image_generation": false,
+						"allow_batch_image_generation": false,
+						"batch_image_discount_multiplier": 0,
+						"batch_image_hold_multiplier": 0,
 						"image_rate_independent": false,
 						"image_rate_multiplier": 0,
+						"video_rate_independent": false,
+						"video_rate_multiplier": 0,
 						"claude_code_only": false,
 						"allow_messages_dispatch": false,
 						"fallback_group_id": null,
@@ -580,6 +594,7 @@ func TestAPIContracts(t *testing.T) {
 						"total_cost": 0.5,
 						"actual_cost": 0.5,
 						"rate_multiplier": 1,
+						"long_context_billing_applied": false,
 						"billing_type": 0,
 							"stream": true,
 							"duration_ms": 100,
@@ -661,15 +676,17 @@ func TestAPIContracts(t *testing.T) {
 					service.SettingKeyTableDefaultPageSize: "20",
 					service.SettingKeyTablePageSizeOptions: "[10,20,50,100]",
 
-					service.SettingKeyOpsMonitoringEnabled:           "false",
-					service.SettingKeyOpsRealtimeMonitoringEnabled:   "true",
-					service.SettingKeyOpsQueryModeDefault:            "auto",
-					service.SettingKeyOpsMetricsIntervalSeconds:      "60",
-					service.SettingPaymentVisibleMethodAlipaySource:  service.VisibleMethodSourceEasyPayAlipay,
-					service.SettingPaymentVisibleMethodWxpaySource:   service.VisibleMethodSourceOfficialWechat,
-					service.SettingPaymentVisibleMethodAlipayEnabled: "true",
-					service.SettingPaymentVisibleMethodWxpayEnabled:  "false",
-					"openai_advanced_scheduler_enabled":              "true",
+					service.SettingKeyOpsMonitoringEnabled:                               "false",
+					service.SettingKeyOpsRealtimeMonitoringEnabled:                       "true",
+					service.SettingKeyOpsQueryModeDefault:                                "auto",
+					service.SettingKeyOpsMetricsIntervalSeconds:                          "60",
+					service.SettingPaymentVisibleMethodAlipaySource:                      service.VisibleMethodSourceEasyPayAlipay,
+					service.SettingPaymentVisibleMethodWxpaySource:                       service.VisibleMethodSourceOfficialWechat,
+					service.SettingPaymentVisibleMethodAlipayEnabled:                     "true",
+					service.SettingPaymentVisibleMethodWxpayEnabled:                      "false",
+					"openai_advanced_scheduler_enabled":                                  "true",
+					service.SettingKeyOpenAIAdvancedSchedulerStickyWeightedEnabled:       "false",
+					service.SettingKeyOpenAIAdvancedSchedulerSubscriptionPriorityEnabled: "false",
 				})
 			},
 			method:     http.MethodGet,
@@ -861,6 +878,28 @@ func TestAPIContracts(t *testing.T) {
 					"payment_visible_method_alipay_enabled": true,
 					"payment_visible_method_wxpay_enabled": false,
 					"openai_advanced_scheduler_enabled": true,
+					"openai_advanced_scheduler_sticky_weighted_enabled": false,
+					"openai_advanced_scheduler_subscription_priority_enabled": false,
+					"openai_advanced_scheduler_lb_top_k": "",
+					"openai_advanced_scheduler_weight_priority": "",
+					"openai_advanced_scheduler_weight_load": "",
+					"openai_advanced_scheduler_weight_queue": "",
+					"openai_advanced_scheduler_weight_error_rate": "",
+					"openai_advanced_scheduler_weight_ttft": "",
+					"openai_advanced_scheduler_weight_reset": "",
+					"openai_advanced_scheduler_weight_quota_headroom": "",
+					"openai_advanced_scheduler_weight_previous_response": "",
+					"openai_advanced_scheduler_weight_session_sticky": "",
+					"openai_advanced_scheduler_effective_lb_top_k": "7",
+					"openai_advanced_scheduler_effective_weight_priority": "1",
+					"openai_advanced_scheduler_effective_weight_load": "1",
+					"openai_advanced_scheduler_effective_weight_queue": "0.7",
+					"openai_advanced_scheduler_effective_weight_error_rate": "0.8",
+					"openai_advanced_scheduler_effective_weight_ttft": "0.5",
+					"openai_advanced_scheduler_effective_weight_reset": "0",
+					"openai_advanced_scheduler_effective_weight_quota_headroom": "0",
+					"openai_advanced_scheduler_effective_weight_previous_response": "5",
+					"openai_advanced_scheduler_effective_weight_session_sticky": "3",
 					"openai_codex_user_agent":           "",
 					"openai_fast_policy_settings": {
 						"rules": []
@@ -875,6 +914,7 @@ func TestAPIContracts(t *testing.T) {
 					"payment_max_pending_orders": 0,
 					"payment_balance_disabled": false,
 					"payment_balance_recharge_multiplier": 0,
+					"payment_subscription_usd_to_cny_rate": 0,
 					"payment_recharge_fee_rate": 0,
 					"payment_load_balance_strategy": "",
 					"payment_product_name_prefix": "",
@@ -1110,6 +1150,28 @@ func TestAPIContracts(t *testing.T) {
 					"payment_visible_method_alipay_enabled": false,
 					"payment_visible_method_wxpay_enabled": false,
 					"openai_advanced_scheduler_enabled": false,
+					"openai_advanced_scheduler_sticky_weighted_enabled": false,
+					"openai_advanced_scheduler_subscription_priority_enabled": false,
+					"openai_advanced_scheduler_lb_top_k": "",
+					"openai_advanced_scheduler_weight_priority": "",
+					"openai_advanced_scheduler_weight_load": "",
+					"openai_advanced_scheduler_weight_queue": "",
+					"openai_advanced_scheduler_weight_error_rate": "",
+					"openai_advanced_scheduler_weight_ttft": "",
+					"openai_advanced_scheduler_weight_reset": "",
+					"openai_advanced_scheduler_weight_quota_headroom": "",
+					"openai_advanced_scheduler_weight_previous_response": "",
+					"openai_advanced_scheduler_weight_session_sticky": "",
+					"openai_advanced_scheduler_effective_lb_top_k": "7",
+					"openai_advanced_scheduler_effective_weight_priority": "1",
+					"openai_advanced_scheduler_effective_weight_load": "1",
+					"openai_advanced_scheduler_effective_weight_queue": "0.7",
+					"openai_advanced_scheduler_effective_weight_error_rate": "0.8",
+					"openai_advanced_scheduler_effective_weight_ttft": "0.5",
+					"openai_advanced_scheduler_effective_weight_reset": "0",
+					"openai_advanced_scheduler_effective_weight_quota_headroom": "0",
+					"openai_advanced_scheduler_effective_weight_previous_response": "5",
+					"openai_advanced_scheduler_effective_weight_session_sticky": "3",
 					"openai_codex_user_agent":           "",
 					"openai_fast_policy_settings": {
 						"rules": []
@@ -1123,6 +1185,7 @@ func TestAPIContracts(t *testing.T) {
 					"payment_enabled_types": null,
 					"payment_balance_disabled": false,
 					"payment_balance_recharge_multiplier": 0,
+					"payment_subscription_usd_to_cny_rate": 0,
 					"payment_recharge_fee_rate": 0,
 					"payment_load_balance_strategy": "",
 					"payment_product_name_prefix": "",
@@ -1690,6 +1753,10 @@ func (s *stubAccountRepo) List(ctx context.Context, params pagination.Pagination
 	return nil, nil, errors.New("not implemented")
 }
 
+func (s *stubAccountRepo) ListAllWithFilters(context.Context, string, string, string, string, int64, string) ([]service.Account, error) {
+	return nil, nil
+}
+
 func (s *stubAccountRepo) ListWithFilters(ctx context.Context, params pagination.PaginationParams, platform, accountType, status, search string, groupID int64, privacyMode string) ([]service.Account, *pagination.PaginationResult, error) {
 	return nil, nil, errors.New("not implemented")
 }
@@ -2058,13 +2125,16 @@ func (stubUserSubscriptionRepo) UpdateNotes(ctx context.Context, subscriptionID 
 func (stubUserSubscriptionRepo) ActivateWindows(ctx context.Context, id int64, start time.Time) error {
 	return errors.New("not implemented")
 }
-func (stubUserSubscriptionRepo) ResetDailyUsage(ctx context.Context, id int64, newWindowStart time.Time) error {
+func (stubUserSubscriptionRepo) ResetUsageWindows(ctx context.Context, id int64, resetDaily, resetWeekly, resetMonthly bool, newWindowStart time.Time) error {
 	return errors.New("not implemented")
 }
-func (stubUserSubscriptionRepo) ResetWeeklyUsage(ctx context.Context, id int64, newWindowStart time.Time) error {
+func (stubUserSubscriptionRepo) ResetDailyUsage(ctx context.Context, id int64, expectedWindowStart *time.Time, newWindowStart time.Time) error {
 	return errors.New("not implemented")
 }
-func (stubUserSubscriptionRepo) ResetMonthlyUsage(ctx context.Context, id int64, newWindowStart time.Time) error {
+func (stubUserSubscriptionRepo) ResetWeeklyUsage(ctx context.Context, id int64, expectedWindowStart *time.Time, newWindowStart time.Time) error {
+	return errors.New("not implemented")
+}
+func (stubUserSubscriptionRepo) ResetMonthlyUsage(ctx context.Context, id int64, expectedWindowStart *time.Time, newWindowStart time.Time) error {
 	return errors.New("not implemented")
 }
 func (stubUserSubscriptionRepo) IncrementUsage(ctx context.Context, id int64, costUSD float64) error {

@@ -180,21 +180,8 @@ func (s *AliyunGatewayService) forwardSubmitOrSync(ctx context.Context, in Aliyu
 
 	switch spec.kind {
 	case "asr_submit":
-		if s.taskRepo != nil {
-			taskID := extractTaskID(result.Body)
-			if taskID != "" {
-				_ = s.taskRepo.UpsertSubmitted(ctx, &AliyunTaskRecord{
-					TaskID:         taskID,
-					UserID:         in.APIKey.User.ID,
-					APIKeyID:       in.APIKey.ID,
-					AccountID:      account.ID,
-					GroupID:        in.APIKey.GroupID,
-					Model:          spec.model,
-					Status:         "pending",
-					RequestHash:    aliyunStringPtr(HashUsageRequestPayload(in.Body)),
-					SubmitResponse: jsonObjectFromBytes(result.Body),
-				})
-			}
+		if err := s.trackSubmittedASRTask(ctx, in, account, spec.model, result.Body); err != nil {
+			return nil, err
 		}
 	case "unit":
 		if err := s.billUnit(ctx, aliyunUnitBillInput{
@@ -249,6 +236,30 @@ func (s *AliyunGatewayService) forwardSubmitOrSync(ctx context.Context, in Aliyu
 		}
 	}
 	return result, nil
+}
+
+func (s *AliyunGatewayService) trackSubmittedASRTask(ctx context.Context, in AliyunGatewayRequest, account *Account, model string, responseBody []byte) error {
+	if s.taskRepo == nil {
+		return aliyunGatewayError(http.StatusInternalServerError, "ALIYUN_TASK_REPOSITORY_MISSING", "Aliyun task repository is not configured")
+	}
+	taskID := extractTaskID(responseBody)
+	if taskID == "" {
+		return aliyunGatewayError(http.StatusBadGateway, "ALIYUN_TASK_ID_MISSING", "Aliyun ASR submission response did not include task_id")
+	}
+	if err := s.taskRepo.UpsertSubmitted(ctx, &AliyunTaskRecord{
+		TaskID:         taskID,
+		UserID:         in.APIKey.User.ID,
+		APIKeyID:       in.APIKey.ID,
+		AccountID:      account.ID,
+		GroupID:        in.APIKey.GroupID,
+		Model:          model,
+		Status:         "pending",
+		RequestHash:    aliyunStringPtr(HashUsageRequestPayload(in.Body)),
+		SubmitResponse: jsonObjectFromBytes(responseBody),
+	}); err != nil {
+		return aliyunGatewayError(http.StatusInternalServerError, "ALIYUN_TASK_TRACKING_FAILED", "Failed to persist Aliyun ASR task")
+	}
+	return nil
 }
 
 func (s *AliyunGatewayService) forwardASRTask(ctx context.Context, in AliyunGatewayRequest) (*AliyunGatewayResult, error) {
@@ -795,6 +806,11 @@ func (s *AliyunGatewayService) extractMeterFromHeadersOrBody(headers http.Header
 		return unit, q
 	}
 	obj := jsonObjectFromBytes(body)
+	if strings.EqualFold(strings.TrimSpace(unit), AliyunMeterAudioSecond) {
+		if q := jsonNumberAt(obj, "usage.seconds"); q > 0 {
+			return unit, q
+		}
+	}
 	if q := extractUsageQuantity(obj); q > 0 {
 		return unit, q
 	}
@@ -871,7 +887,6 @@ func extractUsageQuantity(obj map[string]any) float64 {
 		return 0
 	}
 	paths := []string{
-		"usage.seconds",
 		"usage.duration",
 		"usage.audio_duration",
 		"usage.total_duration",

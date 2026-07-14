@@ -79,12 +79,51 @@ func TestAliyunAccountParticipatesInOpenAICompatibleGateway(t *testing.T) {
 	require.Equal(t, PlatformAliyun, normalizeOpenAICompatiblePlatform(PlatformAliyun))
 }
 
+func TestAliyunAccountIsEligibleOnlyForAliyunScheduling(t *testing.T) {
+	account := &Account{
+		Platform:    PlatformAliyun,
+		Type:        AccountTypeAPIKey,
+		Status:      StatusActive,
+		Schedulable: true,
+		Credentials: map[string]any{"api_key": "sk-aliyun-test"},
+	}
+
+	require.True(t, isOpenAICompatibleAccountEligibleForRequest(
+		context.Background(),
+		account,
+		PlatformAliyun,
+		"qwen-plus",
+		false,
+		OpenAIEndpointCapabilityChatCompletions,
+	))
+	require.False(t, isOpenAICompatibleAccountEligibleForRequest(
+		context.Background(),
+		account,
+		PlatformOpenAI,
+		"qwen-plus",
+		false,
+		OpenAIEndpointCapabilityChatCompletions,
+	))
+}
+
 func TestAliyunFilesGatewaySupportsOpenAIAndAliyunGroups(t *testing.T) {
 	require.True(t, SupportsAliyunFilesGatewayPlatform(PlatformOpenAI))
 	require.True(t, SupportsAliyunFilesGatewayPlatform(PlatformAliyun))
 	require.False(t, SupportsAliyunFilesGatewayPlatform(PlatformAnthropic))
 	require.False(t, SupportsAliyunFilesGatewayPlatform(PlatformGemini))
 	require.False(t, SupportsAliyunFilesGatewayPlatform(PlatformGrok))
+}
+
+func TestAliyunDefaultModelCandidates(t *testing.T) {
+	candidates := defaultModelsListCandidateIDs(PlatformAliyun)
+	require.ElementsMatch(t, []string{
+		"qwen-long",
+		"qwen-plus",
+		AliyunModelTTS,
+		AliyunModelASR,
+		AliyunModelVoiceEnrollment,
+		AliyunModelMultiModalEmbedding,
+	}, candidates)
 }
 
 func TestAliyunNativeGatewayDoesNotGateByGroupPlatform(t *testing.T) {

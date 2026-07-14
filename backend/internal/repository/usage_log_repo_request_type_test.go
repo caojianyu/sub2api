@@ -167,6 +167,34 @@ func TestPrepareUsageLogInsert_PersistsImageSizeMetadata(t *testing.T) {
 	require.JSONEq(t, `{"1K":1,"4K":1}`, breakdownJSON)
 }
 
+func TestPrepareUsageLogInsert_PersistsMeterMetadata(t *testing.T) {
+	meterUnit := "audio_second"
+	meterQuantity := 12.5
+	meterUnitPrice := 0.0001
+	prepared := prepareUsageLogInsert(&service.UsageLog{
+		UserID:         1,
+		APIKeyID:       2,
+		AccountID:      3,
+		RequestID:      "req-meter-metadata",
+		Model:          "qwen3-asr-flash-filetrans",
+		RequestedModel: "qwen3-asr-flash-filetrans",
+		MeterCost:      0.00125,
+		MeterUnit:      &meterUnit,
+		MeterQuantity:  &meterQuantity,
+		MeterUnitPrice: &meterUnitPrice,
+		MeterDetail:    map[string]any{"task_id": "task-1", "terminal": true},
+		CreatedAt:      time.Date(2025, 1, 7, 12, 0, 0, 0, time.UTC),
+	})
+
+	require.Equal(t, 0.00125, prepared.args[usageLogInsertArgIndex(t, "meter_cost")])
+	require.Equal(t, sql.NullString{String: meterUnit, Valid: true}, prepared.args[usageLogInsertArgIndex(t, "meter_unit")])
+	require.Equal(t, &meterQuantity, prepared.args[usageLogInsertArgIndex(t, "meter_quantity")])
+	require.Equal(t, &meterUnitPrice, prepared.args[usageLogInsertArgIndex(t, "meter_unit_price")])
+	meterDetailJSON, ok := prepared.args[usageLogInsertArgIndex(t, "meter_detail")].(string)
+	require.True(t, ok)
+	require.JSONEq(t, `{"task_id":"task-1","terminal":true}`, meterDetailJSON)
+}
+
 func TestCoalesceTrimmedString(t *testing.T) {
 	require.Equal(t, "fallback", coalesceTrimmedString(sql.NullString{}, "fallback"))
 	require.Equal(t, "fallback", coalesceTrimmedString(sql.NullString{Valid: true, String: "   "}, "fallback"))
@@ -180,9 +208,14 @@ func TestAppendUsageLogBillingModeWhereCondition(t *testing.T) {
 		wantCondition string
 	}{
 		{
-			name:          "image includes legacy image rows",
+			name:          "image includes explicit image and legacy image rows",
 			billingMode:   string(service.BillingModeImage),
-			wantCondition: "(billing_mode = $1 OR COALESCE(image_count, 0) > 0)",
+			wantCondition: "(billing_mode = $1 OR ((billing_mode IS NULL OR billing_mode = '') AND COALESCE(image_count, 0) > 0))",
+		},
+		{
+			name:          "video remains exact",
+			billingMode:   string(service.BillingModeVideo),
+			wantCondition: "billing_mode = $1",
 		},
 		{
 			name:          "token includes legacy non-image rows",
@@ -208,7 +241,7 @@ func TestAppendUsageLogBillingModeWhereCondition(t *testing.T) {
 func TestAppendUsageLogBillingModeWhereConditionWithAlias(t *testing.T) {
 	conditions, args := appendUsageLogBillingModeWhereConditionWithAlias(nil, nil, string(service.BillingModeImage), "ul")
 
-	require.Equal(t, []string{"(ul.billing_mode = $1 OR COALESCE(ul.image_count, 0) > 0)"}, conditions)
+	require.Equal(t, []string{"(ul.billing_mode = $1 OR ((ul.billing_mode IS NULL OR ul.billing_mode = '') AND COALESCE(ul.image_count, 0) > 0))"}, conditions)
 	require.Equal(t, []any{string(service.BillingModeImage)}, args)
 }
 
@@ -255,62 +288,66 @@ func usageLogInsertArgIndex(t *testing.T, column string) int {
 func usageLogScanValues(t *testing.T, overrides map[string]any) []any {
 	t.Helper()
 	defaults := map[string]any{
-		"id":                       int64(1),
-		"user_id":                  int64(10),
-		"api_key_id":               int64(20),
-		"account_id":               int64(30),
-		"request_id":               sql.NullString{Valid: true, String: "req-1"},
-		"model":                    "gpt-5",
-		"requested_model":          sql.NullString{Valid: true, String: "gpt-5"},
-		"upstream_model":           sql.NullString{},
-		"group_id":                 sql.NullInt64{},
-		"subscription_id":          sql.NullInt64{},
-		"input_tokens":             0,
-		"output_tokens":            0,
-		"cache_creation_tokens":    0,
-		"cache_read_tokens":        0,
-		"cache_creation_5m_tokens": 0,
-		"cache_creation_1h_tokens": 0,
-		"image_output_tokens":      0,
-		"image_output_cost":        0.0,
-		"input_cost":               0.0,
-		"output_cost":              0.0,
-		"meter_cost":               0.0,
-		"cache_creation_cost":      0.0,
-		"cache_read_cost":          0.0,
-		"total_cost":               0.0,
-		"actual_cost":              0.0,
-		"rate_multiplier":          1.0,
-		"account_rate_multiplier":  sql.NullFloat64{},
-		"billing_type":             int16(service.BillingTypeBalance),
-		"request_type":             int16(service.RequestTypeSync),
-		"stream":                   false,
-		"openai_ws_mode":           false,
-		"duration_ms":              sql.NullInt64{},
-		"first_token_ms":           sql.NullInt64{},
-		"user_agent":               sql.NullString{},
-		"ip_address":               sql.NullString{},
-		"image_count":              0,
-		"image_size":               sql.NullString{},
-		"image_input_size":         sql.NullString{},
-		"image_output_size":        sql.NullString{},
-		"image_size_source":        sql.NullString{},
-		"image_size_breakdown":     sql.NullString{},
-		"service_tier":             sql.NullString{},
-		"reasoning_effort":         sql.NullString{},
-		"inbound_endpoint":         sql.NullString{},
-		"upstream_endpoint":        sql.NullString{},
-		"cache_ttl_overridden":     false,
-		"channel_id":               sql.NullInt64{},
-		"model_mapping_chain":      sql.NullString{},
-		"billing_tier":             sql.NullString{},
-		"billing_mode":             sql.NullString{},
-		"meter_unit":               sql.NullString{},
-		"meter_quantity":           sql.NullFloat64{},
-		"meter_unit_price":         sql.NullFloat64{},
-		"meter_detail":             sql.NullString{},
-		"account_stats_cost":       sql.NullFloat64{},
-		"created_at":               time.Date(2025, 1, 1, 0, 0, 0, 0, time.UTC),
+		"id":                           int64(1),
+		"user_id":                      int64(10),
+		"api_key_id":                   int64(20),
+		"account_id":                   int64(30),
+		"request_id":                   sql.NullString{Valid: true, String: "req-1"},
+		"model":                        "gpt-5",
+		"requested_model":              sql.NullString{Valid: true, String: "gpt-5"},
+		"upstream_model":               sql.NullString{},
+		"group_id":                     sql.NullInt64{},
+		"subscription_id":              sql.NullInt64{},
+		"input_tokens":                 0,
+		"output_tokens":                0,
+		"cache_creation_tokens":        0,
+		"cache_read_tokens":            0,
+		"cache_creation_5m_tokens":     0,
+		"cache_creation_1h_tokens":     0,
+		"image_output_tokens":          0,
+		"image_output_cost":            0.0,
+		"input_cost":                   0.0,
+		"output_cost":                  0.0,
+		"meter_cost":                   0.0,
+		"cache_creation_cost":          0.0,
+		"cache_read_cost":              0.0,
+		"total_cost":                   0.0,
+		"actual_cost":                  0.0,
+		"rate_multiplier":              1.0,
+		"account_rate_multiplier":      sql.NullFloat64{},
+		"billing_type":                 int16(service.BillingTypeBalance),
+		"request_type":                 int16(service.RequestTypeSync),
+		"stream":                       false,
+		"openai_ws_mode":               false,
+		"duration_ms":                  sql.NullInt64{},
+		"first_token_ms":               sql.NullInt64{},
+		"user_agent":                   sql.NullString{},
+		"ip_address":                   sql.NullString{},
+		"image_count":                  0,
+		"image_size":                   sql.NullString{},
+		"image_input_size":             sql.NullString{},
+		"image_output_size":            sql.NullString{},
+		"image_size_source":            sql.NullString{},
+		"image_size_breakdown":         sql.NullString{},
+		"video_count":                  0,
+		"video_resolution":             sql.NullString{},
+		"video_duration_seconds":       sql.NullInt64{},
+		"service_tier":                 sql.NullString{},
+		"reasoning_effort":             sql.NullString{},
+		"inbound_endpoint":             sql.NullString{},
+		"upstream_endpoint":            sql.NullString{},
+		"cache_ttl_overridden":         false,
+		"long_context_billing_applied": false,
+		"channel_id":                   sql.NullInt64{},
+		"model_mapping_chain":          sql.NullString{},
+		"billing_tier":                 sql.NullString{},
+		"billing_mode":                 sql.NullString{},
+		"meter_unit":                   sql.NullString{},
+		"meter_quantity":               sql.NullFloat64{},
+		"meter_unit_price":             sql.NullFloat64{},
+		"meter_detail":                 sql.NullString{},
+		"account_stats_cost":           sql.NullFloat64{},
+		"created_at":                   time.Date(2025, 1, 1, 0, 0, 0, 0, time.UTC),
 	}
 	columns := usageLogSelectColumnNames()
 	values := make([]any, 0, len(columns))
@@ -761,6 +798,27 @@ func (s usageLogScannerStub) Scan(dest ...any) error {
 }
 
 func TestScanUsageLogRequestTypeAndLegacyFallback(t *testing.T) {
+	t.Run("meter_metadata_is_scanned", func(t *testing.T) {
+		log, err := scanUsageLog(usageLogScannerStub{values: usageLogScanValues(t, map[string]any{
+			"model":            "qwen3-asr-flash-filetrans",
+			"requested_model":  sql.NullString{Valid: true, String: "qwen3-asr-flash-filetrans"},
+			"meter_cost":       0.00125,
+			"meter_unit":       sql.NullString{Valid: true, String: "audio_second"},
+			"meter_quantity":   sql.NullFloat64{Valid: true, Float64: 12.5},
+			"meter_unit_price": sql.NullFloat64{Valid: true, Float64: 0.0001},
+			"meter_detail":     sql.NullString{Valid: true, String: `{"task_id":"task-1","terminal":true}`},
+		})})
+		require.NoError(t, err)
+		require.Equal(t, 0.00125, log.MeterCost)
+		require.NotNil(t, log.MeterUnit)
+		require.Equal(t, "audio_second", *log.MeterUnit)
+		require.NotNil(t, log.MeterQuantity)
+		require.Equal(t, 12.5, *log.MeterQuantity)
+		require.NotNil(t, log.MeterUnitPrice)
+		require.Equal(t, 0.0001, *log.MeterUnitPrice)
+		require.Equal(t, map[string]any{"task_id": "task-1", "terminal": true}, log.MeterDetail)
+	})
+
 	t.Run("image_size_metadata_is_scanned", func(t *testing.T) {
 		now := time.Now().UTC()
 		log, err := scanUsageLog(usageLogScannerStub{values: usageLogScanValues(t, map[string]any{
