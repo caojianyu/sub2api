@@ -47,8 +47,8 @@ const (
 // OpenAI-compatible Files endpoint backed by model-router or DashScope.
 //
 // Some deployments represent a DashScope/model-router upstream as an OpenAI
-// API-key account. Files supports both representations, while the remaining
-// Aliyun-native endpoints stay restricted to Aliyun groups.
+// API-key account. This helper only decides whether /v1/files should enter the
+// Aliyun gateway; native /api/v1 routes validate the selected account instead.
 func SupportsAliyunFilesGatewayPlatform(platform string) bool {
 	switch strings.ToLower(strings.TrimSpace(platform)) {
 	case PlatformAliyun, PlatformOpenAI:
@@ -131,11 +131,7 @@ func (s *AliyunGatewayService) Forward(ctx context.Context, in AliyunGatewayRequ
 		return nil, aliyunGatewayError(http.StatusInternalServerError, "ALIYUN_GATEWAY_NOT_CONFIGURED", "Aliyun gateway is not fully configured")
 	}
 	if in.APIKey == nil || in.APIKey.User == nil || in.APIKey.Group == nil {
-		return nil, aliyunGatewayError(http.StatusForbidden, "GROUP_REQUIRED", "API key must be assigned to an Aliyun group")
-	}
-	if in.APIKey.Group.Platform != PlatformAliyun &&
-		!(in.Path == AliyunEndpointFiles && SupportsAliyunFilesGatewayPlatform(in.APIKey.Group.Platform)) {
-		return nil, aliyunGatewayError(http.StatusNotFound, "PLATFORM_NOT_SUPPORTED", "Aliyun native APIs are not supported for this group")
+		return nil, aliyunGatewayError(http.StatusForbidden, "GROUP_REQUIRED", "API key must be assigned to a group")
 	}
 	var (
 		result *AliyunGatewayResult
@@ -521,11 +517,16 @@ func (s *AliyunGatewayService) forwardToUpstream(ctx context.Context, account *A
 		apiKey = strings.TrimSpace(account.GetOpenAIApiKey())
 		baseURL = account.GetOpenAIBaseURL()
 	} else {
-		if !account.IsAliyun() {
-			return nil, aliyunGatewayError(http.StatusBadGateway, "ACCOUNT_PLATFORM_MISMATCH", "selected account is not an Aliyun account")
+		switch {
+		case account.IsAliyun():
+			apiKey = strings.TrimSpace(account.GetAliyunAPIKey())
+			baseURL = account.GetAliyunBaseURL()
+		case account.IsOpenAI():
+			apiKey = strings.TrimSpace(account.GetOpenAIApiKey())
+			baseURL = account.GetOpenAIBaseURL()
+		default:
+			return nil, aliyunGatewayError(http.StatusBadGateway, "ACCOUNT_PLATFORM_MISMATCH", "selected account is not DashScope-compatible")
 		}
-		apiKey = strings.TrimSpace(account.GetAliyunAPIKey())
-		baseURL = account.GetAliyunBaseURL()
 	}
 	if apiKey == "" {
 		return nil, aliyunGatewayError(http.StatusBadGateway, "ACCOUNT_CREDENTIAL_MISSING", "upstream account api_key is missing")
@@ -576,7 +577,7 @@ func buildAliyunTargetURL(baseURL, path, rawQuery string) (string, error) {
 	if !strings.HasPrefix(path, "/") {
 		path = "/" + path
 	}
-	target := baseURL + path
+	target := aliyunNativeBaseURL(baseURL) + path
 	if path == AliyunEndpointFiles {
 		target = buildOpenAIEndpointURL(baseURL, path)
 	}
@@ -586,6 +587,46 @@ func buildAliyunTargetURL(baseURL, path, rawQuery string) (string, error) {
 	}
 	u.RawQuery = rawQuery
 	return u.String(), nil
+}
+
+// aliyunNativeBaseURL converts an OpenAI-compatible endpoint back to the
+// service root used by DashScope native APIs. This lets one model-router
+// account serve both /v1 OpenAI endpoints and /api/v1 native endpoints.
+func aliyunNativeBaseURL(baseURL string) string {
+	normalized := strings.TrimRight(strings.TrimSpace(baseURL), "/")
+	if normalized == "" {
+		return ""
+	}
+
+	parsed, err := url.Parse(normalized)
+	if err != nil || parsed.Scheme == "" || parsed.Host == "" {
+		return normalized
+	}
+
+	path := strings.TrimRight(parsed.Path, "/")
+	lowerPath := strings.ToLower(path)
+	for _, suffix := range []string{
+		"/compatible-mode/v1/chat/completions",
+		"/compatible-mode/v1/responses",
+		"/compatible-mode/v1/files",
+		"/compatible-mode/v1",
+		"/compatible-mode",
+		"/v1/chat/completions",
+		"/v1/responses",
+		"/v1/files",
+		"/v1",
+	} {
+		if strings.HasSuffix(lowerPath, suffix) {
+			path = path[:len(path)-len(suffix)]
+			break
+		}
+	}
+
+	parsed.Path = strings.TrimRight(path, "/")
+	parsed.RawPath = ""
+	parsed.RawQuery = ""
+	parsed.Fragment = ""
+	return strings.TrimRight(parsed.String(), "/")
 }
 
 func copyAliyunRequestHeaders(dst, src http.Header) {

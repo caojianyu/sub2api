@@ -15,6 +15,10 @@ type aliyunCompatibleHTTPUpstreamStub struct {
 	request *http.Request
 }
 
+type aliyunCompatibleAccountRepositoryStub struct {
+	AccountRepository
+}
+
 func (s *aliyunCompatibleHTTPUpstreamStub) Do(req *http.Request, _ string, _ int64, _ int) (*http.Response, error) {
 	s.request = req
 	return &http.Response{
@@ -83,6 +87,30 @@ func TestAliyunFilesGatewaySupportsOpenAIAndAliyunGroups(t *testing.T) {
 	require.False(t, SupportsAliyunFilesGatewayPlatform(PlatformGrok))
 }
 
+func TestAliyunNativeGatewayDoesNotGateByGroupPlatform(t *testing.T) {
+	service := &AliyunGatewayService{
+		accountRepo:    &aliyunCompatibleAccountRepositoryStub{},
+		gatewayService: &GatewayService{},
+		billingService: &BillingService{},
+		resolver:       &ModelPricingResolver{},
+		httpUpstream:   &aliyunCompatibleHTTPUpstreamStub{},
+	}
+	apiKey := &APIKey{
+		User:  &User{ID: 10},
+		Group: &Group{ID: 20, Platform: PlatformOpenAI},
+	}
+
+	_, err := service.Forward(context.Background(), AliyunGatewayRequest{
+		Method: http.MethodPost,
+		Path:   "/api/v1/not-supported",
+		APIKey: apiKey,
+	})
+
+	var gatewayErr *AliyunGatewayError
+	require.ErrorAs(t, err, &gatewayErr)
+	require.Equal(t, "ENDPOINT_NOT_SUPPORTED", gatewayErr.Code)
+}
+
 func TestAliyunFilesForwardUsesOpenAICompatibleAccountCredentials(t *testing.T) {
 	upstream := &aliyunCompatibleHTTPUpstreamStub{}
 	service := &AliyunGatewayService{httpUpstream: upstream}
@@ -142,26 +170,31 @@ func TestAliyunFilesForwardKeepsAliyunAccountCompatibility(t *testing.T) {
 	require.Equal(t, "Bearer sk-aliyun-test", upstream.request.Header.Get("Authorization"))
 }
 
-func TestAliyunNativeForwardStillRejectsOpenAIAccount(t *testing.T) {
-	service := &AliyunGatewayService{httpUpstream: &aliyunCompatibleHTTPUpstreamStub{}}
+func TestAliyunNativeForwardUsesOpenAICompatibleAccountCredentials(t *testing.T) {
+	upstream := &aliyunCompatibleHTTPUpstreamStub{}
+	service := &AliyunGatewayService{httpUpstream: upstream}
 	account := &Account{
-		Platform: PlatformOpenAI,
-		Type:     AccountTypeAPIKey,
+		ID:          44,
+		Platform:    PlatformOpenAI,
+		Type:        AccountTypeAPIKey,
+		Concurrency: 2,
 		Credentials: map[string]any{
 			"api_key":  "sk-test",
-			"base_url": "http://model-router:10030",
+			"base_url": "http://model-router:10030/v1",
 		},
 	}
 
-	_, err := service.forwardToUpstream(context.Background(), account, AliyunGatewayRequest{
+	result, err := service.forwardToUpstream(context.Background(), account, AliyunGatewayRequest{
 		Method: http.MethodPost,
 		Path:   AliyunEndpointTTS,
 		Body:   []byte(`{"model":"cosyvoice-v3-flash"}`),
 	})
 
-	var gatewayErr *AliyunGatewayError
-	require.ErrorAs(t, err, &gatewayErr)
-	require.Equal(t, "ACCOUNT_PLATFORM_MISMATCH", gatewayErr.Code)
+	require.NoError(t, err)
+	require.Equal(t, http.StatusCreated, result.StatusCode)
+	require.NotNil(t, upstream.request)
+	require.Equal(t, "http://model-router:10030/api/v1/services/audio/tts/SpeechSynthesizer", upstream.request.URL.String())
+	require.Equal(t, "Bearer sk-test", upstream.request.Header.Get("Authorization"))
 }
 
 func TestAliyunPassthroughAndCanonicalEmbeddingSpecs(t *testing.T) {
@@ -207,6 +240,29 @@ func TestAliyunFilesURLNormalizesOpenAICompatibleBases(t *testing.T) {
 			target, err := buildAliyunTargetURL(tt.base, AliyunEndpointFiles, "purpose=file-extract")
 			require.NoError(t, err)
 			require.Equal(t, "http://model-router:10030/v1/files?purpose=file-extract", target)
+		})
+	}
+}
+
+func TestAliyunNativeURLNormalizesOpenAICompatibleBases(t *testing.T) {
+	tests := []struct {
+		name string
+		base string
+		want string
+	}{
+		{name: "bare router root", base: "http://model-router:10030", want: "http://model-router:10030"},
+		{name: "versioned router root", base: "http://model-router:10030/v1", want: "http://model-router:10030"},
+		{name: "chat endpoint", base: "http://model-router:10030/v1/chat/completions", want: "http://model-router:10030"},
+		{name: "responses endpoint", base: "http://model-router:10030/v1/responses", want: "http://model-router:10030"},
+		{name: "official compatible endpoint", base: "https://dashscope.aliyuncs.com/compatible-mode/v1", want: "https://dashscope.aliyuncs.com"},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			require.Equal(t, tt.want, aliyunNativeBaseURL(tt.base))
+			target, err := buildAliyunTargetURL(tt.base, AliyunEndpointTTS, "")
+			require.NoError(t, err)
+			require.Equal(t, tt.want+AliyunEndpointTTS, target)
 		})
 	}
 }
